@@ -1,0 +1,172 @@
+[
+    {
+        "id": 1,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133028,
+        "payload": "root",
+        "length": 134038,
+        "error": false
+    },
+    {
+        "id": 2,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133035,
+        "payload": "admin",
+        "length": 134045,
+        "error": false
+    },
+    {
+        "id": 3,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133028,
+        "payload": "test",
+        "length": 134038,
+        "error": false
+    },
+    {
+        "id": 4,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133035,
+        "payload": "guest",
+        "length": 134045,
+        "error": false
+    },
+    {
+        "id": 5,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133028,
+        "payload": "info",
+        "length": 134038,
+        "error": false
+    },
+    {
+        "id": 6,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133021,
+        "payload": "adm",
+        "length": 134031,
+        "error": false
+    },
+    {
+        "id": 7,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133035,
+        "payload": "mysql",
+        "length": 134045,
+        "error": false
+    },
+    {
+        "id": 8,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133028,
+        "payload": "user",
+        "length": 134038,
+        "error": false
+    },
+    {
+        "id": 9,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133091,
+        "payload": "administrator",
+        "length": 134101,
+        "error": false
+    },
+    {
+        "id": 10,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133042,
+        "payload": "oracle",
+        "length": 134052,
+        "error": false
+    },
+    {
+        "id": 11,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133021,
+        "payload": "ftp",
+        "length": 134031,
+        "error": false
+    },
+    {
+        "id": 12,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133014,
+        "payload": "pi",
+        "length": 134024,
+        "error": false
+    },
+    {
+        "id": 13,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133042,
+        "payload": "puppet",
+        "length": 134052,
+        "error": false
+    },
+    {
+        "id": 14,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133049,
+        "payload": "ansible",
+        "length": 134059,
+        "error": false
+    },
+    {
+        "id": 15,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133056,
+        "payload": "ec2-user",
+        "length": 134066,
+        "error": false
+    },
+    {
+        "id": 16,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133049,
+        "payload": "vagrant",
+        "length": 134059,
+        "error": false
+    },
+    {
+        "id": 17,
+        "response": 200,
+        "lines": 1103,
+        "words": 6907,
+        "chars": 133063,
+        "payload": "azureuser",
+        "length": 134073,
+        "error": false
+    }
+]
