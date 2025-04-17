@@ -1,5 +1,3 @@
-<h1> Tools </h1>
-
 <script>
 
     function gotoCrawler() {
@@ -18,27 +16,27 @@
     }
     
     </script>
-    
     <nav>
       <div class="toolsConfigPage">
+        <h1 style="color: white;"> Tools </h1>
         <div class="row">
-          <span> Crawler </span>
-          <button on:click={gotoCrawler} title="Navigates to the Crawler page">Select</button>
+          <div><span> Crawler </span></div>
+          <div><button on:click={gotoCrawler} title="Navigates to the Crawler page">Select</button></div>
         </div>
 
         <div class="row">
-          <span> Fuzzer </span>
-          <button on:click={gotoFuzzer} title="Navigates to the Fuzzer page">Select</button>
+          <div><span> Fuzzer </span></div>
+          <div><button on:click={gotoFuzzer} title="Navigates to the Fuzzer page">Select</button></div>
         </div>
 
         <div class="row">
-          <span> Brute Forcer </span>
-          <button on:click={gotoBruteForcer}>Select</button>
+          <div><span> Brute Forcer </span></div>
+          <div><button on:click={gotoBruteForcer}>Select</button></div>
         </div>
 
         <div class="row">
-          <span> AI Credential Generator </span>
-          <button on:click={gotoAI} title="Navigates to the AI Credential Generastor page">Select</button>
+          <div><span> AI Credential Generator </span></div>
+          <div><button on:click={gotoAI} title="Navigates to the AI Credential Generastor page">Select</button></div>
         </div>
         
       </div>

@@ -65,11 +65,11 @@
 <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Create New Project</h5>
+            <div class="modal-header" style="background-color: #232323;">
+                <h5 class="modal-title" style="color: white;">Create New Project</h5>
                 <button type="button" class="btn-close" on:click={closeModal} aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="background-color: #2e2e2e;">
                 {#if error}
                     <div class="alert alert-danger">{error}</div>
                 {/if}

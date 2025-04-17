@@ -184,7 +184,7 @@
   
   <!-- Header with Title and Buttons -->
   <div class="d-flex justify-content-between align-items-center mt-4">
-    <h1>Project Selection</h1>
+    <h1 style="color: white">Project Selection</h1>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-secondary">
         <span class="import-icon">🖴</span> Import
@@ -197,19 +197,19 @@
   
   <!-- Recent Projects -->
   <div class="container-fluid mt-4">
-    <h2 class="mt-4">Recent Projects</h2>
+    <h2 class="mt-4" style="color: white">Recent Projects</h2>
     <div class="row gx-3">
       {#each recent_projects.slice(0, 3) as project}
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4 mb-3" style="background-color: #242424; border: 2px solid #2e2e2e;">
           <button type="button" class="card h-100 clickable-card" on:click={() => runScan(project.name)}>
             <div class="card-body">
-              <h5 class="card-title">{project.name}</h5>
-              <p class="card-text">
+              <h5 class="card-title" style="color: white">{project.name}</h5>
+              <p class="card-text" style="color: white">
                 Last Edit: {project.last_edit_date.slice(0, 10) + " T:" + project.last_edit_date.slice(11, 19) || project.Stamp_Date.slice(0, 10) + " T:" + project.Stamp_Date.slice(11, 19) || 'N/A'}
               </p>
             </div>
             <div class="card-footer {project.Status === 'Active' ? 'border-success' : project.Status === 'Error' ? 'border-danger' : 'border-secondary'}">
-              <small>Status: {project.Status}</small>
+              <small style="color: white">Status: {project.Status}</small>
             </div>
           </button>
         </div>
@@ -221,7 +221,7 @@
   </div>
   
   <!-- All Projects -->
-  <h2 class="mt-4">All Projects</h2>
+  <h2 class="mt-4" style="color: white">All Projects</h2>
   
   <!-- Search and Filter Bar -->
   <div class="d-flex justify-content-end mb-3">
@@ -253,6 +253,7 @@
         role="tab"
         aria-controls="my-projects"
         aria-selected="true"
+        style="color: white; background-color:#242424; border: 1px solid #2e2e2e;"
       >
         My Projects
       </button>
@@ -267,6 +268,7 @@
         role="tab"
         aria-controls="shared-projects"
         aria-selected="false"
+        style="color: white; background-color:#242424; border: 1px solid #2e2e2e;"
       >
         Shared Projects
       </button>
@@ -280,19 +282,19 @@
         <table class="table table-striped">
           <thead>
             <tr>
-              <th>Project Name</th>
-              <th>Last Edit</th>
-              <th>Lead Analyst</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Project Name</th>
+              <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Last Edit</th>
+              <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Lead Analyst</th>
+              <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Status</th>
+              <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody style="border: 2px solid #2e2e2e;">
             {#each filteredMyProjects.filter(project=>project.is_deleted===false) as project}
               <tr data-project-name={project.name}>
-                <td>{project.name}</td>
-                <td>{project.last_edit_date.slice(0,10)+" T:"+ project.last_edit_date.slice(11,19)|| project.Stamp_Date.slice(0,10) +" T:"+ project.Stamp_Date.slice(11,19) || 'N/A'}</td>
-                <td>{project.analyst_initials || 'N/A'}</td>
+                <td style="color: white;">{project.name}</td>
+                <td style="color: white;">{project.last_edit_date.slice(0,10)+" T:"+ project.last_edit_date.slice(11,19)|| project.Stamp_Date.slice(0,10) +" T:"+ project.Stamp_Date.slice(11,19) || 'N/A'}</td>
+                <td style="color: white;">{project.analyst_initials || 'N/A'}</td>
                 <td>
                   <span
                     class="badge {project.Status === 'Active'
@@ -382,21 +384,21 @@
         <table class="table table-striped">
             <thead>
             <tr>
-                <th>Project Name</th>
-                <th>Last Edit</th>
-                <th>Lead Analyst</th>
-                <th>Port</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Project Name</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Last Edit</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Lead Analyst</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Port</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Status</th>
+                <th style="color: white; background-color:#242424; border: 2px solid #2e2e2e;">Actions</th>
             </tr>
             </thead>
             <tbody>
             {#each filteredSharedProjects as project}
                 <tr>
-                <td>{project.name}</td>
-                <td>{project.last_edit_date?.slice(0,10) + " T:" + project.last_edit_date?.slice(11,19) || project.Stamp_Date?.slice(0,10) + " T:" + project.Stamp_Date?.slice(11,19) || 'N/A'}</td>
-                <td>{project.analyst_initials || 'N/A'}</td>
-                <td>{project.port_number || 'N/A'}</td>
+                <td style="color: white;">{project.name}</td>
+                <td style="color: white;">{project.last_edit_date?.slice(0,10) + " T:" + project.last_edit_date?.slice(11,19) || project.Stamp_Date?.slice(0,10) + " T:" + project.Stamp_Date?.slice(11,19) || 'N/A'}</td>
+                <td style="color: white;">{project.analyst_initials || 'N/A'}</td>
+                <td style="color: white;">{project.port_number || 'N/A'}</td>
                 <td>
                     <span
                     class="badge {project.Status === 'Active'
