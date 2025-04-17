@@ -294,7 +294,7 @@
             <h2>Generating Credentials...</h2>
             <button onclick={(e) => {preventDefault(e); stopAI()}} title="Completely Stops AI generation">Stop Generation</button>
           </form>
-          <div class="lds-dual-ring" style="padding-left: 40%;"></div>
+          <div class="lds-dual-ring" style="padding-left: 0%;"></div>
       {/if}
 
       {#if displayingResults}
@@ -303,8 +303,8 @@
         <table>
           <thead>
             <tr>
-              <th>Username</th>
-              <th>Password</th>
+              <th style="background-color: #007bff;">Username</th>
+              <th style="background-color: #007bff;">Password</th>
             </tr>
           </thead>
           <tbody>
@@ -327,8 +327,8 @@
         <table>
           <thead>
             <tr>
-              <th>Filename</th>
-              <th>Actions</th>
+              <th style="background-color: #007bff;">Filename</th>
+              <th style="background-color: #007bff;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -446,7 +446,7 @@
 
     /* Toggled state */
     .toggle-switch input:checked+.slider {
-        background-color: #646cff;
+        background-color: #007bff;
     }
 
     .toggle-switch input:checked+.slider::before {
