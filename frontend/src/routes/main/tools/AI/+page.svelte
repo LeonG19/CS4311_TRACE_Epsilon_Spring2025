@@ -151,21 +151,22 @@
   
   <div class="aiConfigPage">
     <div>
-      <h1>AI Generator</h1>
       {#if acceptingParams}
-        <div>
+        <div style="text-align: center;">
+            <h1>AI Generator</h1>
             <form onsubmit= "{(e) => {e.preventDefault(); handleSubmit(); paramsToGenerate()}}">
 
                 {wordlistInput.label}
                 <input accept=wordlistInput.accept type={wordlistInput.type} placeholder={wordlistInput.example} requirement={wordlistInput.required} onchange={handleFile}/>
-
+             
                 <div class="input-container">
                   <div class="column">
                   <label>Username</label>
-                  {#each usernameInput as param}
-                      <label>
-                          {param.label}:
+                  {#each usernameInput as param} 
+                      <label>{param.label}</label> 
+                      <label class="toggle-switch">                
                           <input type="checkbox" bind:checked={param.isChecked} onchange={(e) => dynamicAiParamUpdate(param.id, e.target.checked)} />
+                          <span class="slider"></span>
                       </label>
                   {/each}
 
@@ -179,10 +180,11 @@
                   <div class="column">
                   <label>Password</label>
                   {#each passwordInput as param}
-                      <label>
-                          {param.label}:
-                          <input type="checkbox" bind:checked={param.isChecked} onchange={(e) => dynamicAiParamUpdate(param.id, e.target.checked)} />
-                      </label>
+                      <label>{param.label}</label> 
+                      <label class="toggle-switch">                
+                        <input type="checkbox" bind:checked={param.isChecked} onchange={(e) => dynamicAiParamUpdate(param.id, e.target.checked)} />
+                      <span class="slider"></span>
+                  </label>
                   {/each}
 
                   <label>
@@ -199,10 +201,10 @@
       {/if}
 
       {#if generating}
-        <div>
-          <h2>Generating Credentials...</h2>
-          <p>{err}</p>
-        </div>
+          <form style="width: 80%; height: 200px; text-align: center; border: 2px solid #5f5f5f;">
+            <h2>Generating Credentials...</h2>
+          </form>
+          <div class="lds-dual-ring" style="padding-left: 40%;"></div>
       {/if}
 
       {#if displayingResults}
@@ -248,12 +250,16 @@
     }
 
     .input-container {
+      width: 100%;
     display: flex;
     gap: 20px; /* Adjust spacing between columns */
     justify-content: space-between; /* Distributes columns evenly */
     }
 
     .column {
+      padding-top: 10px;
+      border: 1px solid #5f5f5f;
+      border-radius: 10px;
         display: flex;
         flex-direction: column;
         gap: 10px; /* Adjusts spacing between elements */
@@ -284,5 +290,85 @@
     .row span {
       margin-right: 15px;
     }
+
+    .toggle-switch {
+        margin-top: -25px;
+        align-self: center;
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    /* Hide default checkbox */
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    /* The track */
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        background-color: #ccc;
+        border-radius: 24px;
+        width: 100%;
+        height: 100%;
+        transition: background-color 0.3s;
+    }
+
+    /* The circular slider */
+    .slider::before {
+        content: "";
+        position: absolute;
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 2px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+    }
+
+    /* Toggled state */
+    .toggle-switch input:checked+.slider {
+        background-color: #646cff;
+    }
+
+    .toggle-switch input:checked+.slider::before {
+        transform: translateX(26px);
+    }
+
+    
+    .lds-dual-ring,
+    .lds-dual-ring:after {
+      box-sizing: border-box;
+    }
+    .lds-dual-ring {
+      display: inline-block;
+      width: 80px;
+      height: 80px;
+    }
+    .lds-dual-ring:after {
+      content: " ";
+      display: block;
+      width: 64px;
+      height: 64px;
+      margin: 8px;
+      border-radius: 50%;
+      border: 6.4px solid currentColor;
+      border-color: #646cff transparent #646cff transparent;
+      animation: lds-dual-ring 1.2s linear infinite;
+    }
+    @keyframes lds-dual-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
 
   </style>
