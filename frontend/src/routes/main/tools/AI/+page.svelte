@@ -1,6 +1,6 @@
 <script>
-  
-  let wordlistInput = { id: "wordlist", type: "file", accept: ".json, .txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
+  let err = ""
+  let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
   let usernameInput = [
     { id: "userChar", type: "checkbox", label: "Characters", isChecked: true},
@@ -10,16 +10,28 @@
 
   let passwordInput = [
     { id: "passChar", type: "checkbox", label: "Characters", isChecked: true},
-    { id: "passChar", type: "checkbox", label: "Numbers", isChecked: true},
+    { id: "passNum", type: "checkbox", label: "Numbers", isChecked: true},
     { id: "passSymb", type: "checkbox", label: "Symbols", isChecked: true}
   ]
 
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
 
+  let wordlist;
+
   let aiParams = {
     wordlist : ""
   }
+
+  for(let i = 0; i < usernameInput.length;i++){
+    aiParams[usernameInput[i].id] = usernameInput[i].isChecked;
+  }
+  console.log("Populated aiParams with Username checkbox...");
+
+  for(let i = 0; i < passwordInput.length;i++){
+    aiParams[passwordInput[i].id] = passwordInput[i].isChecked;
+  }
+  console.log("Populated aiParams with Password checkbox...");
 
   let aiResult = []
 
@@ -42,16 +54,98 @@
     acceptingParams = true;
   }
 
+  function regenerateCredentials(){
+    displayingResults = false;
+    generating = true;
+    handleSubmit();
+  }
+
+  function saveWordlist(){
+    let textContent = "Username,Password\n";
+    textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
+
+    // Create a Blob and Object URL
+    const blob = new Blob([textContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary download link
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "GeneratedWordlist.txt"; // Default file name
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Cleanup
+    URL.revokeObjectURL(url);
+  }
+
   function dynamicAiParamUpdate(id, value) {
+    aiParams[id] = value;
+    console.log(`Updated ${id}: ${value}`);
+  }
+
+  // Checks that the file is exclusively txt file and updates our file accordingly
+  async function handleFile(event) {
+    const selectedFile = event.target.files[0];
+
+    if (selectedFile && selectedFile.type === "text/plain") {
+      wordlist = selectedFile;
+
+      // Update param after file validation
+      dynamicAiParamUpdate(wordlistInput.id, selectedFile);
+      console.log("Valid file selected:", wordlist.name);
+
+    } else {
+      alert("Please select a valid .txt file");
+      event.target.value = ""; // Reset input
+      wordlist = null;
+    }
   }
 
   // This is for inputs to be sent to the backend for computation.
   async function handleSubmit() {
     console.log("Form Submitted");
-  }
 
-  async function handleFile() {
-    console.log("File Submitted");
+    const formData = new FormData();
+
+    if(wordlist) {
+      formData.append("file", wordlist);
+    }
+
+    formData.append("data", JSON.stringify(aiParams));
+
+    try{
+      const response = await fetch('http://localhost:8000/generate-credentials', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        console.log("Generating...")
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+
+        while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          const updates = chunk.split('\n').filter(Boolean).map(JSON.parse);
+          aiResult = [...aiResult, ...updates];
+
+          console.log("Processed Credentials...", aiResult[0].credentials);
+          }
+        }
+        generatingToResults();
+      } else {
+        console.error("Error starting generate:", response.statusText);
+      }
+    } catch (error) {
+        console.error("Request failed:", error);
+        err = error;
+    }
   }
 </script>
   
@@ -63,7 +157,7 @@
             <form onsubmit= "{(e) => {e.preventDefault(); handleSubmit(); paramsToGenerate()}}">
 
                 {wordlistInput.label}
-                <input accept=wordlistInput.accept type={wordlistInput.type} bind:value={wordlistInput.id} placeholder={wordlistInput.example} requirement={wordlistInput.required} oninput={(e) => {dynamicAiParamUpdate(wordlistInput.id, e.target.value); handleFile()}}/>
+                <input accept=wordlistInput.accept type={wordlistInput.type} placeholder={wordlistInput.example} requirement={wordlistInput.required} onchange={handleFile}/>
 
                 <div class="input-container">
                   <div class="column">
@@ -71,7 +165,7 @@
                   {#each usernameInput as param}
                       <label>
                           {param.label}:
-                          <input type="checkbox" bind:checked={param.isChecked} oninput={(e) => dynamicAiParamUpdate(param.id, e.target.value)} />
+                          <input type="checkbox" bind:checked={param.isChecked} onchange={(e) => dynamicAiParamUpdate(param.id, e.target.checked)} />
                       </label>
                   {/each}
 
@@ -87,7 +181,7 @@
                   {#each passwordInput as param}
                       <label>
                           {param.label}:
-                          <input type="checkbox" bind:checked={param.isChecked} oninput={(e) => dynamicAiParamUpdate(param.id, e.target.value)} />
+                          <input type="checkbox" bind:checked={param.isChecked} onchange={(e) => dynamicAiParamUpdate(param.id, e.target.checked)} />
                       </label>
                   {/each}
 
@@ -107,14 +201,32 @@
       {#if generating}
         <div>
           <h2>Generating Credentials...</h2>
+          <p>{err}</p>
         </div>
       {/if}
 
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
-        <div>
-          <button onclick={(e) => { resultsToParams()}}>Back to Param Setup</button>
-        </div>
+        <div class="results-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Password</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each aiResult[0].credentials as [username, password], index}
+              <tr>
+                <td>{username}</td>
+                <td>{password}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+        <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
+        <button onclick={(e) => {saveWordlist()}}>Save Wordlist</button>
+      </div>
       {/if}
 
     </div>
