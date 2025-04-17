@@ -1,4 +1,7 @@
 <script>
+
+  import { preventDefault } from "svelte/legacy";
+
   let err = ""
   let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
@@ -19,6 +22,8 @@
 
   let wordlist;
 
+  let uList;
+
   let aiParams = {
     wordlist : ""
   }
@@ -38,10 +43,21 @@
   let acceptingParams = true;
   let generating = false;
   let displayingResults = false;
+  let showWordlists = false;
 
   function paramsToGenerate(){
     acceptingParams = false;
     generating = true;
+  }
+
+  function paramsToWordlist(){
+    acceptingParams = false;
+    showWordlists = true;
+  }
+
+  function wordlistToParams(){
+    acceptingParams = true;
+    showWordlists = false;
   }
 
   function generatingToResults(){
@@ -51,6 +67,11 @@
 
   function resultsToParams(){
     displayingResults = false;
+    acceptingParams = true;
+  }
+
+  function generatingToParams(){
+    generating = false;
     acceptingParams = true;
   }
 
@@ -85,6 +106,27 @@
     console.log(`Updated ${id}: ${value}`);
   }
 
+  async function handleDelete(file){
+    console.log(file)
+    try {
+      const response = await fetch("http://localhost:8000/delete_userpassword", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({file})
+      });
+      const data = await response.json();
+
+      if(response.ok){
+        console.log("Delete Successful")
+      }
+
+    } catch (error) {
+      console.error("Error fetching user list:", error);
+    }
+  }
+
   // Checks that the file is exclusively txt file and updates our file accordingly
   async function handleFile(event) {
     const selectedFile = event.target.files[0];
@@ -100,6 +142,21 @@
       alert("Please select a valid .txt file");
       event.target.value = ""; // Reset input
       wordlist = null;
+    }
+  }
+
+  async function fetchUserList() {
+    try {
+      const response = await fetch("http://localhost:8000/display_userList", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      uList = data
+
+      console.log("Retrieved wordlist: ", uList)
+    } catch (error) {
+      console.error("Error fetching user list:", error);
     }
   }
 
@@ -147,6 +204,37 @@
         err = error;
     }
   }
+
+  async function handleSave() {
+    let textContent = "Username,Password\n";
+    textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
+
+    console.log("Saving File... ");
+
+    const file = new File([textContent], "user_credentials.txt", {type: "text/csv"});
+
+    const formData = new FormData();
+    formData.append("file",file);
+
+    try{
+      const response = await fetch("http://localhost:8000/save_userpassword", {
+      method: "POST",
+      body: formData
+      });
+
+      if (response.ok) {
+        console.log("File saved!");
+      } else {
+        console.error("Error saving file:", response.statusText);
+      }
+    } catch (error) {
+        console.error("Request failed:", error);
+        err = error;
+    }
+}
+
+
+
 </script>
   
   <div class="aiConfigPage">
@@ -197,12 +285,14 @@
 
             <button type="submit">Submit</button>
           </form>
+          <button onclick={(e) => {fetchUserList(); paramsToWordlist()}}>Saved Wordlists</button>
         </div>
       {/if}
 
       {#if generating}
           <form style="width: 80%; height: 200px; text-align: center; border: 2px solid #5f5f5f;">
             <h2>Generating Credentials...</h2>
+            <button onclick={(e) => {preventDefault(e); stopAI()}} title="Completely Stops AI generation">Stop Generation</button>
           </form>
           <div class="lds-dual-ring" style="padding-left: 40%;"></div>
       {/if}
@@ -227,8 +317,31 @@
           </tbody>
         </table>
         <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
-        <button onclick={(e) => {saveWordlist()}}>Save Wordlist</button>
+        <button onclick={(e) => {handleSave()}}>Save Wordlist</button>
       </div>
+      {/if}
+
+      {#if showWordlists}
+        <h2>AI Credential Generator Results</h2>
+        <div class="results-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each uList as file}
+              <tr>
+                <td>{file}</td>
+                <td><button id={file} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(file);wordlistToParams()}}>Delete</button></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+        <button onclick={(e) => {wordlistToParams()}}>Back to Param Setup</button>
+        </div>
       {/if}
 
     </div>
