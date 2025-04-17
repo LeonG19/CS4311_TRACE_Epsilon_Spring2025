@@ -9,6 +9,12 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
+
+
+
+
+
+
 #Natural Language Processing routine that cleans CSV text 
 def nlp_subroutine(csv_path: str):
     stopwords = {"the", "and", "or"} #Words to clean from CSV file
@@ -209,17 +215,68 @@ class CredentialGeneratorMDP:
     def __init__(self, csv_path: str, wordlist_path: str, user_include_char: bool, user_include_num: bool, user_include_sym: bool,user_length: int, pass_include_char: bool, pass_include_num: bool, pass_include_sym: bool, pass_length: int):
         try:
             self.web_text = load_web_text(csv_path)
+        except (FileNotFoundError, ValueError) as e:
+            print(f"Error loading input files: {e}")
+            self.web_text = ""
+        try:
             self.wordlists = load_wordlist(wordlist_path)
         except (FileNotFoundError, ValueError) as e:
             print(f"Error loading input files: {e}")
-            self.web_text = csv_path
-            self.wordlists = wordlist_path
+            self.wordlists = ""
+
+        self.user_include_char = user_include_char
+        self.user_include_num = user_include_num
+        self.user_include_sym = user_include_sym
+        
+        self.pass_include_char = pass_include_char
+        self.pass_include_num = pass_include_num
+        self.pass_include_sym = pass_include_sym
 
         self.username_mdp = CredentialMDP(order=2)
         self.password_mdp = CredentialMDP(order=3)
-        self.min_username_length = user_length 
-        self.min_password_length = pass_length
+        self.min_username_length = int(user_length) 
+        self.min_password_length = int(pass_length)
         
+    def allowed_username_char(self, ch: str) -> bool:
+        # Check if the character is alphabetic and whether letters are allowed
+        if ch.isalpha() and not self.user_include_char:
+            return False
+        # Check if the character is a digit and whether digits are allowed
+        if ch.isdigit() and not self.user_include_num:
+            return False
+        # Check for special characters (a common set could be defined)
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.user_include_sym:
+            return False
+        return True
+
+    def allowed_password_char(self, ch: str) -> bool:
+        if ch.isalpha() and not self.pass_include_char:
+            return False
+        if ch.isdigit() and not self.pass_include_num:
+            return False
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.pass_include_sym:
+            return False
+        return True
+    
+    def get_allowed_username_chars(self) -> str:
+        allowed = ""
+        if self.user_include_char:
+            allowed += "abcdefghijklmnopqrstuvwxyz"  # extend as needed (could add uppercase if allowed)
+        if self.user_include_num:
+            allowed += "0123456789"
+        if self.user_include_sym:
+            allowed += "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`"
+        return allowed
+
+    def get_allowed_password_chars(self) -> str:
+        allowed = ""
+        if self.pass_include_char:
+            allowed += "abcdefghijklmnopqrstuvwxyz"  # and possibly uppercase if desired
+        if self.pass_include_num:
+            allowed += "0123456789"
+        if self.pass_include_sym:
+            allowed += "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`"
+        return allowed
 
     # Preprocess text data
     def preprocess_text(self, text: str) -> List[str]:
@@ -228,60 +285,76 @@ class CredentialGeneratorMDP:
 
     # Build state transitions for username and password generation
     def build_state_transitions(self):
-        username_data = set(self.preprocess_text(self.web_text) + self.wordlists)
-        password_data = set(word for word in username_data if len(word) >= 8)
-
+        if self.wordlists == "":
+            username_data = set(self.preprocess_text(self.web_text))
+            password_data = set(word for word in username_data if (len(word) >= 8 or word.isdigit()))
+        else:
+            username_data = set(self.preprocess_text(self.web_text) + self.wordlists)
+            password_data = set(word for word in username_data if (len(word) >= 8 or word.isdigit()))
+        print(username_data)
         for word in username_data:
             for i in range(len(word) - self.username_mdp.order):
-                state = f"username_{word[i:i+self.username_mdp.order]}"
-                action = word[i+self.username_mdp.order]
-                next_char = word[i+self.username_mdp.order]
-                self.username_mdp.state_transitions[state][action].add(next_char)
-                if i == 0:
-                    self.username_mdp.initial_states.append(state)
+                candidate = word[i+self.username_mdp.order]
+                # Only add this transition if the candidate is allowed
+                if self.allowed_username_char(candidate):
+                    state = f"username_{word[i:i+self.username_mdp.order]}"
+                    action = candidate
+                    self.username_mdp.state_transitions[state][action].add(candidate)
+                    # When handling the initial state, check if every character in the state (excluding the prefix) is allowed.
+                    if i == 0:
+                        state_substring = word[i:i+self.username_mdp.order]
+                        allowed_chars = self.get_allowed_username_chars()  # Helper that returns a string of allowed characters.
+                        if all(ch in allowed_chars for ch in state_substring):
+                            self.username_mdp.initial_states.append(state)
 
         for word in password_data:
             for i in range(len(word) - self.password_mdp.order):
-                state = f"password_{word[i:i+self.password_mdp.order]}"
-                action = word[i+self.password_mdp.order]
-                next_char = word[i+self.password_mdp.order]
-                self.password_mdp.state_transitions[state][action].add(next_char)
-                if i == 0:
-                    self.password_mdp.initial_states.append(state)
+                candidate = word[i+self.password_mdp.order]
+                if self.allowed_password_char(candidate):
+                    state = f"password_{word[i:i+self.password_mdp.order]}"
+                    action = candidate
+                    self.password_mdp.state_transitions[state][action].add(candidate)
+                    if i == 0:
+                        state_substring = word[i:i+self.password_mdp.order]
+                        allowed_chars = self.get_allowed_password_chars()
+                        if all(ch in allowed_chars for ch in state_substring):
+                            self.password_mdp.initial_states.append(state)
 
     # Generate a username and password pair
     def generate_credential(self) -> Tuple[str, str]:
         # Generate username
-        if not self.username_mdp.initial_states:
+        if not self.username_mdp.initial_states and self.wordlists != "":
             state = f"username_{random.choice(self.wordlists)[:2]}"
         else:
             state = random.choice(self.username_mdp.initial_states)
 
         username = state[9:]
+        allowed_chars = self.get_allowed_username_chars()
         while len(username) < self.min_username_length:
             action, next_char = self.username_mdp.choose_action(state)
             if not action or not next_char:
-                break
+                # Fallback: append a random allowed character if none is provided by the MDP
+                next_char = random.choice(list(allowed_chars))
             username += next_char
             next_state = f"username_{username[-self.username_mdp.order:]}"
-            reward = self.username_mdp.get_reward(state, action, next_char)
-            self.username_mdp.update_q_value(state, action, next_char, next_state, reward)
+            reward = self.username_mdp.get_reward(state, action if action else next_char, next_char)
+            self.username_mdp.update_q_value(state, action if action else next_char, next_char, next_state, reward)
             state = next_state
 
-        username = f"{username}{random.randint(1, 999)}"
-        self.username_mdp.used_usernames.add(username)
 
         # Generate password
-        if not self.password_mdp.initial_states:
+        if not self.password_mdp.initial_states and self.wordlists != None:
             state = f"password_{random.choice(self.wordlists)[:3]}"
         else:
             state = random.choice(self.password_mdp.initial_states)
 
         password = state[9:]
+        allowed_chars = self.get_allowed_password_chars()
+
         while len(password) < self.min_password_length:
             action, next_char = self.password_mdp.choose_action(state)
             if not action or not next_char:
-                break
+                next_char = random.choice(list(allowed_chars))
             password += next_char
             next_state = f"password_{password[-self.password_mdp.order:]}"
             reward = self.password_mdp.get_reward(state, action, next_char)
@@ -294,9 +367,13 @@ class CredentialGeneratorMDP:
     # Enhance the generated password
     def enhance_password(self, password: str) -> str:
         enhanced = password.capitalize()
-        enhanced = f"{enhanced}{random.choice('!@#$%^&*')}{random.randint(0, 9)}"
-        return enhanced
+        if self.pass_include_sym:
+            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}{random.randint(0, 9)}"
+            
+        if self.pass_include_num:
+            enhanced = f"{enhanced}{random.randint(0, 9)}"
 
+        return enhanced
     # Generate multiple credentials
     def generate_credentials(self, count: int = 10) -> List[Tuple[str, str]]:
         self.build_state_transitions()
