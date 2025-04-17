@@ -1,196 +1,214 @@
 <script>
-  let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true };
+  import { preventDefault } from "svelte/legacy";
 
+  // Input conf
+  let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", required: true };
   let fuzzerInput = [
-    { id: "target_url", label: "Target URL", type: "text", value: "", example: "Ex: https://userinput.com/path?param=value  ->", required: true },
+    { id: "target_url", label: "Target URL", type: "text", example: "Ex: https://example.com", required: true },
     { id: "http_method", label: "HTTP Method", type: "select", options: ["GET", "POST", "PUT"], value: "GET", required: true },
-    { id: "cookies", label: "Cookies", type: "text", value: "", example: "name=value; name2=value2", required: false },
-    { id: "hide_status", label: "Hide Status Code", type: "text", value: "", example: "404,500", required: false },
-    { id: "show_status", label: "Show Status Code", type: "text", value: "", example: "200,301,302", required: false },
-    { id: "filter_by_content_length", label: "Filter by Content Length", type: "text", value: "", example: "1234", required: false },
-    { id: "proxy", label: "Proxy", type: "text", value: "", example: "http://proxy:port ->", required: false },
-    { id: "additional_parameters", label: "Additional Parameters", type: "text", value: "", example: "param1=value1&param2=value2", required: false }
+    { id: "cookies", label: "Cookies", type: "text", example: "NULL", required: false },
+    { id: "hide_status", label: "Hide Status Code", type: "text", example: "404,403,etc", required: false },
+    { id: "show_status", label: "Show Status Code", type: "text", example: "200,500,etc", required: false },
+    { id: "filter_by_content_length", label: "Filter by Content Length", type: "text", example: ">100,>500,etc", required: false },
+    { id: "proxy", label: "Proxy", type: "text", example: "http://proxy:port", required: false },
+    { id: "additional_parameters", label: "Additional Parameters", type: "text", example: "NULL", required: false }
   ];
 
-  let fuzzerParams = {
-    target_url: "",
-    word_list: "",
-    show_results: true  // Initialize show_results option
-  };
-
-  let results = [];
+  // State variables
+  let fuzzerParams = { target_url: "", word_list: "", show_results: true };
+  let results = []; 
   let acceptingParams = true;
   let isRunning = false;
   let displayingResults = false;
-  let showResultsButton = false; // New state variable
-  let selectedFileName = "No file selected"; // Track selected file name
-  let fileUploaded = false; // Track if file was successfully uploaded
-
-  // Track progress
+  let selectedFileName = "No file selected";
+  let fileUploaded = false;
+  let activeController = null;
+  let popoutWindow = null;
+  let terminalOutput = [];
+  
+  // Progress tracking
   let progress = 0;
   let processedRequests = 0;
   let filteredRequests = 0;
   let requestsPerSecond = 0;
   let startTime = null;
+  let accumulatedTime = 0;
   let elapsedTime = "0s";
   let timerInterval;
-  let terminalOutput = [];
-  let popoutWindow = null; // Reference to pop-out window
+  
+  // Control flags
+  let pauseAvailable = true;
+  let resumeAvailable = false;
+  
+  // Sorting configuration
+  let sortConfig = { column: "", direction: 'asc' };
 
-  function startTimer() {
-    startTime = Date.now();
-    timerInterval = setInterval(() => {
-      const seconds = Math.floor((Date.now() - startTime) / 1000);
-      elapsedTime = `${seconds}s`;
-    }, 1000);
-  }
-
-  function stopTimer() {
-    clearInterval(timerInterval);
-  }
-
+  // Navigation functions
+  function goBack() { window.location.href = "/main/tools"; }
+  
   function paramsToRunning() {
     acceptingParams = false;
     isRunning = true;
-    showResultsButton = false; // Reset button 
   }
-
-  function runningToResults() {
+  
+  function runningToResults(e) {
+    if (e) preventDefault(e);
     isRunning = false;
     displayingResults = true;
-    showResultsButton = false; // Hide button after navigating
   }
-
-  function resultsToParams() {
+  
+  function resultsToParams(e) {
+    if (e) preventDefault(e);
     displayingResults = false;
     acceptingParams = true;
     results = [];
     terminalOutput = [];
   }
-
+  
+  // Timer 
+  function startTimer() {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const currentElapsed = Date.now() - startTime;
+      const totalElapsed = accumulatedTime + currentElapsed;
+      elapsedTime = `${Math.floor(totalElapsed / 1000)}s`;
+    }, 1000);
+  }
+  
+  function stopTimer() {
+    clearInterval(timerInterval);
+    if (startTime) accumulatedTime += Date.now() - startTime;
+  }
+  
+  function resetTimer() {
+    clearInterval(timerInterval);
+    accumulatedTime = 0;
+    elapsedTime = '0s';
+  }
+  
+  // Button state 
+  function pauseToResumeButton() {
+    pauseAvailable = false;
+    resumeAvailable = true;
+  }
+  
+  function resumeToPauseButton() {
+    resumeAvailable = false;
+    pauseAvailable = true;
+  }
+  
+  // input changes
   function dynamicFuzzerParamUpdate(id, value) {
     fuzzerParams[id] = value;
-    console.log(`Updated ${id} to ${value}`);
   }
-
-  // New function for pop-out terminal
-  function openTerminalWindow() {
-    // Close existing window if open
+  
+  // Sort function
+  function sortTable(column) {
+    sortConfig.direction = sortConfig.column === column && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    sortConfig.column = column;
+    
+    results = [...results].sort((a, b) => {
+      const aValue = a[column];
+      const bValue = b[column];
+      
+      // numeric vals
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      //strings
+      const aString = String(aValue || '').toLowerCase();
+      const bString = String(bValue || '').toLowerCase();
+      return sortConfig.direction === 'asc' ? aString.localeCompare(bString) : bString.localeCompare(aString);
+    });
+  }
+    // toggleTerminal function
+  function toggleTerminal(e) {
+    if (e) preventDefault(e);
+    
     if (popoutWindow && !popoutWindow.closed) {
       popoutWindow.focus();
       return;
     }
     
-    // Set dimensions and position
-    const width = 600;
-    const height = 400;
+    const width = 600, height = 400;
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     
-    // Open a new window
-    popoutWindow = window.open(
-      '', 
-      'fuzzerTerminal',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
+    popoutWindow = window.open('', 'fuzzerTerminal', 
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
     
-    // Create basic document structure
     const doc = popoutWindow.document;
     doc.title = "Fuzzer Terminal Output";
     
     // Add styles
-    const style = doc.createElement('style');
-    style.textContent = `
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #242424;
-        color: #FFFFFF;
-      }
-      .terminal-header {
-        background-color: #333;
-        padding: 8px 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .terminal-content {
-        padding: 10px;
-        height: calc(100vh - 40px);
-        overflow-y: auto;
-      }
-      .terminal-line {
-        font-family: monospace;
-        margin-bottom: 3px;
-        word-break: break-all;
-      }
-      .success { color: #4CAF50; }
-      .warning { color: #FF9800; }
-      .error { color: #F44336; }
-      .auto-scroll {
-        margin: 0 15px;
-        display: flex;
-        align-items: center;
-      }
-      .auto-scroll input {
-        margin-right: 5px;
-      }
+    doc.head.innerHTML = `
+      <style>
+        body {
+          font-family: monospace;
+          margin: 0;
+          padding: 0;
+          background-color: #242424;
+          color: #FFFFFF;
+        }
+        .terminal-header {
+          background-color: #333;
+          padding: 8px 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .terminal-content {
+          padding: 10px;
+          height: calc(100vh - 40px);
+          overflow-y: auto;
+        }
+        .terminal-line {
+          white-space: pre;
+          margin-bottom: 3px;
+        }
+        .success { color: #4CAF50; }
+        .warning { color: #FF9800; }
+        .error { color: #F44336; }
+        .auto-scroll {
+          margin: 0 15px;
+          display: flex;
+          align-items: center;
+          color: white;
+        }
+        .auto-scroll input {
+          margin-right: 5px;
+        }
+      </style>
     `;
-    doc.head.appendChild(style);
     
-    // Create header
-    const header = doc.createElement('div');
-    header.className = 'terminal-header';
+    // auto-scroll checkbox for terminal
+    doc.body.innerHTML = `
+      <div class="terminal-header">
+        <span>Fuzzer Terminal Output</span>
+        <div class="auto-scroll">
+          <input type="checkbox" id="auto-scroll" checked>
+          <label for="auto-scroll">Auto-scroll</label>
+        </div>
+      </div>
+      <div id="terminal-content" class="terminal-content"></div>
+    `;
     
-    const headerTitle = doc.createElement('span');
-    headerTitle.textContent = 'Fuzzer Terminal Output';
-    header.appendChild(headerTitle);
-    
-    const autoScrollDiv = doc.createElement('div');
-    autoScrollDiv.className = 'auto-scroll';
-    
-    const autoScrollCheckbox = doc.createElement('input');
-    autoScrollCheckbox.type = 'checkbox';
-    autoScrollCheckbox.id = 'auto-scroll';
-    autoScrollCheckbox.checked = true;
-    
-    const autoScrollLabel = doc.createElement('label');
-    autoScrollLabel.htmlFor = 'auto-scroll';
-    autoScrollLabel.textContent = 'Auto-scroll';
-    
-    autoScrollDiv.appendChild(autoScrollCheckbox);
-    autoScrollDiv.appendChild(autoScrollLabel);
-    header.appendChild(autoScrollDiv);
-    
-    doc.body.appendChild(header);
-    
-    // Create content area
-    const content = doc.createElement('div');
-    content.id = 'terminal-content';
-    content.className = 'terminal-content';
-    doc.body.appendChild(content);
-    
-    // Add script functionality
+    //  add lines
     const script = doc.createElement('script');
     script.textContent = `
-      // Get elements
       const terminalContent = document.getElementById('terminal-content');
       const autoScrollCheckbox = document.getElementById('auto-scroll');
       
-      // Function to add a new line to the terminal
       window.addTerminalLine = function(text, type) {
         const line = document.createElement('div');
         line.className = 'terminal-line';
-        
         if (type) {
           line.classList.add(type);
         }
-        
         line.textContent = text;
         terminalContent.appendChild(line);
         
-        // Auto-scroll to bottom if enabled
         if (autoScrollCheckbox.checked) {
           terminalContent.scrollTop = terminalContent.scrollHeight;
         }
@@ -198,54 +216,34 @@
     `;
     doc.body.appendChild(script);
     
-    // Add existing terminal output
-    terminalOutput.forEach(line => {
-      // Determine line type based on content
-      let type = '';
-      if (line.includes('ERROR') || line.includes('-> 4')) {
-        type = 'error';
-      } else if (line.includes('-> 3')) {
-        type = 'warning';
-      } else if (line.includes('-> 2')) {
-        type = 'success';
-      }
-      
+    // Add existing lines
+    terminalOutput.forEach(entry => {
       try {
-        popoutWindow.addTerminalLine(line, type);
+        popoutWindow.addTerminalLine(entry.text, entry.type);
       } catch (e) {
         console.error('Error adding line to terminal:', e);
       }
     });
   }
 
-  // Update to use pop-out terminal
-  function toggleTerminal() {
-    openTerminalWindow();
-  }
-
-  // Add line to terminal output
-  function addToTerminal(line, type = '') {
-    // Add to array
-    terminalOutput = [...terminalOutput, line];
+  function addToTerminal(result, type = '') {
+    const id = String(result.id).padStart(2, '0');
+    const formattedLine = `${id} : ${result.response} ${result.lines} L ${result.words} W ${result.chars} CH `;
+    terminalOutput.push({ text: formattedLine, type });
     
-    // Add to pop out window if open
     if (popoutWindow && !popoutWindow.closed) {
       try {
-        popoutWindow.addTerminalLine(line, type);
+        popoutWindow.addTerminalLine(formattedLine, type);
       } catch (e) {
-        console.error('Error updating pop-out window:', e);
+        console.error('Error updating terminal:', e);
       }
     }
   }
 
-  // Function to handle file upload for wordlist
+  // File handle
   async function handleFile(event) {
-    console.log("File Submitted");
-    
-    // Get the selected file
     const fileInput = event.target;
     if (!fileInput.files || fileInput.files.length === 0) {
-      console.log("No file selected");
       selectedFileName = "No file selected";
       fileUploaded = false;
       return;
@@ -253,30 +251,22 @@
     
     const file = fileInput.files[0];
     selectedFileName = file.name;
-    console.log("Selected file:", file.name);
     
-    const formData = new FormData();// Create FormData to send the file
+    const formData = new FormData();
     formData.append('file', file);
     
     try {
-      // Send the file to the server
       const response = await fetch('http://localhost:8000/upload-wordlist', {
         method: 'POST',
         body: formData
       });
       
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
       
       const result = await response.json();
-      console.log("File uploaded successfully:", result);
-      
-      // Update the fuzzerParams with the file path
       fuzzerParams.word_list = result.path;
       fileUploaded = true;
       
-      // Update the UI to show successful upload
       const statusElement = document.querySelector('#file-status');
       if (statusElement) {
         statusElement.textContent = `File uploaded: ${file.name}`;
@@ -286,30 +276,116 @@
       console.error("Error uploading file:", error);
       fileUploaded = false;
       
-      // Update the UI to show error
       const statusElement = document.querySelector('#file-status');
       if (statusElement) {
-        statusElement.textContent = `Error uploading the file: ${error.message}`;
+        statusElement.textContent = `Error uploading file: ${error.message}`;
         statusElement.className = 'selected-file error';
       }
     }
   }
-
-  function exportResults() {  // Export the results to file
+  
+  // Export functions
+  function exportResults(e) {
+    if (e) preventDefault(e);
     const dataStr = JSON.stringify(results, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-
     const exportFileDefaultName = 'fuzz_results.json';
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    const link = document.createElement('a');
+    link.setAttribute('href', dataUri);
+    link.setAttribute('download', exportFileDefaultName);
+    link.click();
   }
-
-  // inputs to be sent to the backend for computation
+  
+  function exportToCSV(e) {
+    if (e) preventDefault(e);
+    let filename = urlToFilename(fuzzerParams.target_url || 'fuzz_results');
+    
+    const keys = results.length > 0 ? Object.keys(results[0]) : [];
+    const headerRow = keys.join(',');
+    
+    const dataRows = results.map(row => {
+      return keys.map(key => {
+        if (row[key] === null || row[key] === undefined) return '""';
+        if (typeof row[key] === 'object') return `"${JSON.stringify(row[key]).replace(/"/g, '""')}"`;
+        return `"${String(row[key]).replace(/"/g, '""')}"`;
+      }).join(',');
+    });
+    
+    const csvContent = [headerRow, ...dataRows].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `${filename}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  
+  function urlToFilename(url) {
+    return url
+      .replace(/^https?:\/\//, '')
+      .replace(/[^a-z0-9]/gi, '_')
+      .toLowerCase();
+  }
+  
+  // API call functions with unified error handling
+  async function apiCall(endpoint, onSuccess, messagePrefix) {
+    try {
+      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        onSuccess(result);
+        addToTerminal(`${messagePrefix}: ${result.message}`, endpoint.includes('resume') ? 'success' : 
+                                                             endpoint.includes('pause') ? 'warning' : 'error');
+      } else {
+        addToTerminal(`Error with ${endpoint}: ${response.statusText}`, 'error');
+      }
+    } catch (error) {
+      addToTerminal(`Error: ${error.message}`, 'error');
+    }
+  }
+  
+  // Handling functions
+  function handlePauseFuzz(e) {
+    preventDefault(e);
+    pauseToResumeButton();
+    stopTimer();
+    addToTerminal('Pausing fuzzer...', 'warning');
+    apiCall('pause_fuzzer', () => {}, 'Fuzzer paused');
+  }
+  
+  function handleResumeFuzz(e) {
+    preventDefault(e);
+    resumeToPauseButton();
+    startTimer();
+    addToTerminal('Resuming fuzzer...', 'success');
+    apiCall('resume_fuzzer', () => {}, 'Fuzzer resumed');
+  }
+  
+  function handleStopFuzz(e) {
+    preventDefault(e);
+    stopTimer();
+    addToTerminal('Stopping fuzzer...', 'error');
+    
+    if (activeController) activeController.abort();
+    apiCall('stop_fuzzer', () => {}, 'Fuzzer stopped');
+  }
+  
+  function handleRestartFuzz(e) {
+    preventDefault(e);
+    results = [];
+    terminalOutput = [];
+    resetTimer();
+    handleSubmit();
+  }
+  
+  // Main handler
   async function handleSubmit() {
-    // Validate form before proceeding
     if (!fuzzerParams.target_url) {
       alert('Target URL is required');
       return;
@@ -320,7 +396,9 @@
       return;
     }
     
+    // Reset state
     paramsToRunning();
+    resetTimer();
     startTimer();
     progress = 0;
     processedRequests = 0;
@@ -328,108 +406,79 @@
     requestsPerSecond = 0;
     results = [];
     terminalOutput = [];
-
+    pauseAvailable = true;
+    resumeAvailable = false;
+    
+    //abort 
+    activeController = new AbortController();
+    
     try {
       const response = await fetch('http://localhost:8000/fuzzer', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fuzzerParams),
+        signal: activeController.signal
       });
-
-      if (!response.ok) {
-        throw new Error(`Fuzzing request failed: ${response.status}`);
-      }
-
+      
+      if (!response.ok) throw new Error(`Fuzzing request failed: ${response.status}`);
+      
+      // Process streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
+      
       while (true) {
         const { done, value } = await reader.read();
-
+        
         if (done) {
-          showResultsButton = true; // Set the button to visible when done
           stopTimer();
           break;
         }
-
-        // Process the chunked response data here 
+        
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n').filter(line => line.trim());
-
+        
         for (const line of lines) {
           try {
             const update = JSON.parse(line);
-
-            // Update progress and stats
-            if (update.progress) {
-              progress = update.progress * 100;
-            }
-
+            
+            // Update progress metrics
+            if (update.progress) progress = update.progress * 100;
             processedRequests = update.processed_requests || processedRequests;
             filteredRequests = update.filtered_requests || filteredRequests;
             requestsPerSecond = update.requests_per_second || requestsPerSecond;
-
+            
+            // Handle payload results
             if (update.payload) {
-              // Determine type based on response code
-              let type = '';
-              if (update.response >= 400) {
-                type = 'error';
-              } else if (update.response >= 300) {
-                type = 'warning';
-              } else {
-                type = 'success';
-              }
-              
-              // Format terminal output
-              const terminalLine = `Request ${update.id}: ${update.payload} -> ${update.response}`;
-              
-              // Add to terminal
-              addToTerminal(terminalLine, type);
-
-              // Add result to table
+              // Determine status type
+              let type = update.response >= 400 ? 'error' : 
+                        update.response >= 300 ? 'warning' : 'success';
+  
+              // Add to terminal with the full result object
+              addToTerminal(update, type);
+  
+              // Add to results table and terminal
               results = [...results, update];
+              logOutput += `[${update.response}] ${update.payload}\n`;
             }
           } catch (error) {
-            console.error('Error parsing update:', error);
             addToTerminal(`ERROR: ${error.message}`, 'error');
           }
         }
       }
     } catch (error) {
-      console.error('Error during fuzzing:', error);
-      addToTerminal(`ERROR: ${error.message}`, 'error');
-      showResultsButton = true; // Show button even on error
+      if (error.name === 'AbortError') {
+        addToTerminal('Fuzzing operation aborted.', 'error');
+      } else {
+        addToTerminal(`ERROR: ${error.message}`, 'error');
+      }
       stopTimer();
     }
-  }
-
-  function pauseFuzz() {
-    //will need some work here server?
-    console.log('Pause requested');
-  }
-
-  function stopFuzz() {
-    showResultsButton = true; // Show button when stopped
-    stopTimer();
-  }
-
-  function restartFuzz() {
-    results = [];
-    terminalOutput = [];
-    handleSubmit();
-  }
-
-  function goBack() {
-    window.location.href = "/main/tools";
   }
 </script>
 
 <div class="crawlerConfigPage">
   <div>
     <h1>Parameter Fuzzing</h1>
-    <button on:click={goBack} class="back-button">Back to Tools</button>
 
     {#if acceptingParams}
       <div>
@@ -477,21 +526,19 @@
             {/if}
           {/each}
 
-          <button type="submit" class="submit-button">Start Fuzzing</button>
+          <button type="submit" class="submit-button" title="Begin Fuzzing with set parameters">Start Fuzzing</button>
         </form>
       </div>
     {/if}
 
     {#if isRunning}
-      <div>
+      <div class="crawl-section">
         <h2>Running...</h2>
         <div class="progress-bar">
-          <div
-            class="progress"
-            style="width: {progress}%"
-          ></div>
+          <div class="progress" style="width: {progress}%"></div>
         </div>
         <p>{progress.toFixed(0)}% Complete</p>
+        
         <div class="metrics">
           <div class="metric-item">
             <strong>Running Time</strong>
@@ -511,102 +558,125 @@
           </div>
         </div>
 
-        {#if fuzzerParams.show_results}
-          <div class="results-container">
-            {#if results.length === 0}
-              <p>No data has been received. Please wait...</p>
-            {/if}
-            {#if results.length > 0}
-              <table>
-                <thead>
+        <!-- Results Table -->
+        <div class="results-table">
+          {#if results.length === 0}
+            <p>No data has been received. Please wait...</p>
+          {:else}
+            <table>
+              <thead>
+                <tr>
+                  <th on:click={() => sortTable('id')}>ID {sortConfig.column === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th on:click={() => sortTable('response')}>Response {sortConfig.column === 'response' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th on:click={() => sortTable('lines')}>Lines {sortConfig.column === 'lines' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th on:click={() => sortTable('words')}>Words {sortConfig.column === 'words' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th on:click={() => sortTable('chars')}>Chars {sortConfig.column === 'chars' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th>Payload</th>
+                  <th on:click={() => sortTable('length')}>Length {sortConfig.column === 'length' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each results as result (result.id)}
                   <tr>
-                    <th>ID</th>
-                    <th>Response</th>
-                    <th>Lines</th>
-                    <th>Words</th>
-                    <th>Chars</th>
-                    <th>Payload</th>
-                    <th>Length</th>
-                    <th>Error</th>
+                    <td>{result.id}</td>
+                    <td class={result.response >= 400 ? 'error' : (result.response >= 300 ? 'warning' : 'success')}>
+                      {result.response}
+                    </td>
+                    <td>{result.lines}</td>
+                    <td>{result.words}</td>
+                    <td>{result.chars}</td>
+                    <td>{result.payload}</td>
+                    <td>{result.length}</td>
+                    <td>{result.error ? 'Yes' : 'No'}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {#each results as result (result.id)}
-                    <tr>
-                      <td>{result.id}</td>
-                      <td class={result.response >= 400 ? 'error' : (result.response >= 300 ? 'warning' : 'success')}>
-                        {result.response}
-                      </td>
-                      <td>{result.lines}</td>
-                      <td>{result.words}</td>
-                      <td>{result.chars}</td>
-                      <td>{result.payload}</td>
-                      <td>{result.length}</td>
-                      <td>{result.error ? 'Yes' : 'No'}</td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            {/if}
-          </div>
-        {:else}
-          <div class="results-placeholder">
-            <p>Results will be displayed when the scan completes</p>
-          </div>
-        {/if}
-
-        <div class="action-buttons">
-          <button class="pause-button" on:click={pauseFuzz}>Pause</button>
-          <button class="restart-button" on:click={restartFuzz}>Restart</button>
-          <button class="stop-button" on:click={stopFuzz}>Stop</button>
-          <button class="terminal-button" on:click={toggleTerminal}>
-            Open Terminal
-          </button>
-          <button class="export-button" on:click={exportResults}>Export</button>
-          {#if showResultsButton}
-            <button on:click={runningToResults} class="go-to-results-button">Go to Fuzzing Results</button>
+                {/each}
+              </tbody>
+            </table>
+            
+            <div class="action-buttons">
+              <button on:click={runningToResults} class="go-to-results-button">Go to Fuzzing Results</button>
+              <button on:click={exportResults} class="export-button">Export as JSON</button>
+              <button on:click={exportToCSV} class="export-button">Export as CSV</button>
+            </div>
           {/if}
         </div>
+
+        <div class="action-buttons">
+          {#if pauseAvailable}
+            <button class="pause-button" on:click={handlePauseFuzz} title="Pauses Fuzzing">Pause Fuzzer</button>
+          {/if}
+          {#if resumeAvailable}
+            <button class="resume-button" on:click={handleResumeFuzz} title="Resumes Fuzzing">Resume Fuzzer</button>
+          {/if}
+          <button class="stop-button" on:click={handleStopFuzz} title="Fully stops the Fuzzing">Stop Fuzzer</button>
+          <button class="restart-button" on:click={handleRestartFuzz} title="Restarts Fuzzing with the set parameters">Restart</button>
+          <button class="terminal-button" on:click={toggleTerminal} title="Displays Fuzzing in the terminal">Open Terminal</button>
+        </div>
+
       </div>
     {/if}
 
     {#if displayingResults}
-      <h2>Fuzzing Results</h2>
-      <div class="results-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Response</th>
-              <th>Lines</th>
-              <th>Words</th>
-              <th>Chars</th>
-              <th>Payload</th>
-              <th>Length</th>
-              <th>Error</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each results as result (result.id)}
+      <div class="crawl-section">
+        <h2>Fuzzing Results</h2>
+        <div class="metrics">
+          <div class="metric-item">
+            <strong>Running Time</strong>
+            <span>{elapsedTime}</span>
+          </div>
+          <div class="metric-item">
+            <strong>Processed Requests</strong>
+            <span>{processedRequests}</span>
+          </div>
+          <div class="metric-item">
+            <strong>Filtered Requests</strong>
+            <span>{filteredRequests}</span>
+          </div>
+          <div class="metric-item">
+            <strong>Requests/sec</strong>
+            <span>{requestsPerSecond}</span>
+          </div>
+        </div>
+
+        <div class="results-table">
+          <table>
+            <thead>
               <tr>
-                <td>{result.id}</td>
-                <td class={result.response >= 400 ? 'error' : (result.response >= 300 ? 'warning' : 'success')}>
-                  {result.response}
-                </td>
-                <td>{result.lines}</td>
-                <td>{result.words}</td>
-                <td>{result.chars}</td>
-                <td>{result.payload}</td>
-                <td>{result.length}</td>
-                <td>{result.error ? 'Yes' : 'No'}</td>
+                <th on:click={() => sortTable('id')}>ID {sortConfig.column === 'id' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th on:click={() => sortTable('response')}>Response {sortConfig.column === 'response' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th on:click={() => sortTable('lines')}>Lines {sortConfig.column === 'lines' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th on:click={() => sortTable('words')}>Words {sortConfig.column === 'words' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th on:click={() => sortTable('chars')}>Chars {sortConfig.column === 'chars' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th>Payload</th>
+                <th on:click={() => sortTable('length')}>Length {sortConfig.column === 'length' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</th>
+                <th>Error</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
-        <div class="action-buttons">
-          <button on:click={resultsToParams} class="back-button">Back to Param Setup</button>
-          <button class="terminal-button" on:click={toggleTerminal}>Open Terminal</button>
-          <button class="export-button" on:click={exportResults}>Export Results</button>
+            </thead>
+            <tbody>
+              {#each results as result (result.id)}
+                <tr>
+                  <td>{result.id}</td>
+                  <td class={result.response >= 400 ? 'error' : (result.response >= 300 ? 'warning' : 'success')}>
+                    {result.response}
+                  </td>
+                  <td>{result.lines}</td>
+                  <td>{result.words}</td>
+                  <td>{result.chars}</td>
+                  <td>{result.payload}</td>
+                  <td>{result.length}</td>
+                  <td>{result.error ? 'Yes' : 'No'}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          
+          <div class="action-buttons">
+            <button on:click={resultsToParams} class="back-button" title="Navigates back to Fuzzing Parameters">Back to Param Setup</button>
+            <button on:click={toggleTerminal} class="terminal-button" title="Opens a terminal to view">Open Terminal</button>
+            <button on:click={exportResults} class="export-button" title="Exports results as a JSON file">Export as JSON</button>
+            <button on:click={exportToCSV} class="export-button" title="Exports results as a CSV file">Export as CSV</button>
+          </div>
         </div>
       </div>
     {/if}
@@ -614,7 +684,7 @@
 </div>
 
 <style>
-
+  /*using  global CSS for most stylesonly have specific ones here for fuzzer */
   .file-input-container {
     display: flex;
     flex-direction: column;
@@ -625,17 +695,22 @@
   .selected-file {
     font-size: 0.9em;
     margin-top: 5px;
-    position: static; 
-    top: 0;
-    left: 0;
+    position: static;
     background: transparent;
   }
+
+  .selected-file.success { color: #4CAF50; }
+  .selected-file.error { color: #F44336; }
 
   .input-container {
     display: flex;
     flex-direction: column;
     gap: 5px;
   }
+
+  .success { color: #4CAF50; }
+  .warning { color: #FF9800; }
+  .error { color: #F44336; }
 
   .progress-bar {
     width: 100%;
@@ -647,51 +722,49 @@
 
   .progress {
     height: 20px;
-    background-color: #5bbfb2;
+    background-color: #646cff;
     transition: width 0.3s ease;
   }
 
-  .results-placeholder {
-    background-color: #1f1f1f;
-    padding: 20px;
-    border-radius: 4px;
-    text-align: center;
-    margin: 20px 0;
-    border: 1px dashed #444;
+  .results-table {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow: auto;
+    border: 1px solid #333;
+    border-radius: 5px;
+    width: 100%;        /* keeps a static width */
+    table-layout: fixed; /* Ensures equal column widths */
   }
 
-  .action-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 20px 0;
+  .results-table th,
+  .results-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    white-space: nowrap; /* Prevents text from wrapping */
+    overflow: hidden; /* Hides overflow text */
+    text-overflow: ellipsis; /* Adds ellipsis for overflow text */
   }
 
-  .pause-button, .restart-button, .stop-button, .terminal-button {
-    background-color: #5bbfb2;
+  .action-buttons button {
+    margin-top: 20px;
+    margin-right: 10px;
+    padding: 5px 10px;
+    font-size: 1rem;
+    width: auto;
+    min-width: 80px;
+  }
+
+  .terminal-button {
+    margin-left: 40px; /* Has the terminal button a little further right*/
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background-color: #646cff;
     color: white;
-  }
-
-  .export-button {
-    background-color: #4CAF50;
-    color: white;
-  }
-
-  .go-to-results-button {
-    background-color: #5bbfb2;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 10px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-  }
-
-  .back-button {
-    margin-bottom: 20px;
-    padding: 8px 15px;
-    background-color: #1a1a1a;
-    border: 1px solid #444;
-    color: white;
   }
 </style>

@@ -24,6 +24,9 @@
   let showResultsButton = false; // New state variable
   let selectedFileName = "No file selected"; // Track selected file name
   let fileUploaded = false; // Track if file was successfully uploaded
+  let showTerminal = false;
+  let logOutput = '';
+  let visibleResults=[];
 
   // Track progress
   let progress = 0;
@@ -33,6 +36,12 @@
   let startTime = null;
   let elapsedTime = "0s";
   let timerInterval;
+
+  //applying crawler sorter i added over there to here
+  let sortConfig = {
+  column: "",
+  direction: 'asc'
+  };
 
   function startTimer() {
     startTime = Date.now();
@@ -64,9 +73,40 @@
     results = [];
   }
 
+  function pauseBruteForce() {
+    console.log("Pause clicked");
+  }
+
+  function stopBruteForce() {
+    console.log("Stop clicked");
+    isRunning = false;
+    stopTimer();
+    showResultsButton = true;
+  }
+
+  function restartBruteForce() {
+    console.log("Restart clicked");
+    results = [];
+    displayingResults = false; // 🔧 hide final results
+    stopTimer();
+    handleSubmit(); // starts fresh
+  }
+
   function dynamicBruteForceParamUpdate(id, value) {
     bruteForceParams[id] = value;
-    console.log(`Updated ${id} to ${value}`);
+    if (id === 'hide_status_code') {
+      bruteForceParams.hide_status = value.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+    }
+
+    if (id === 'show_status_code') {
+      bruteForceParams.show_status = value.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+    }
+
+    if (id === 'filter_by_content_length') {
+      const numeric = parseInt(value);
+      if (!isNaN(numeric)) bruteForceParams.filter_by_content_length = numeric;
+    }
+    //console.log(`Updated ${id} to ${value}`);
   }
 
   // Function to handle file upload for wordlist
@@ -183,6 +223,7 @@
 
             if (update.payload) {
               results = [...results, update];
+              logOutput += `[${update.response}] ${update.payload} \t ${update.length} bytes \t ${update.words} words\n`;
             }
           } catch (error) {
             console.error('Error parsing update:', error);
@@ -206,6 +247,32 @@
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  }
+
+  function sortTable(column) {
+    const { direction } = sortConfig;
+
+    // Toggle sorting direction
+    sortConfig.direction = direction === 'asc' ? 'desc' : 'asc';
+    sortConfig.column = column;
+
+    console.log(`Sorting by column: ${column}, direction: ${sortConfig.direction}`);
+
+    results = [...results].sort((a, b) => {
+      const aValue = a[column];
+      const bValue = b[column];
+
+      // Ensure we are working with numbers where appropriate
+      const aValueParsed = typeof aValue === 'number' ? aValue : parseFloat(aValue);
+      const bValueParsed = typeof bValue === 'number' ? bValue : parseFloat(bValue);
+
+      if (aValueParsed < bValueParsed) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      } else if (aValueParsed > bValueParsed) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
   }
 </script>
 
@@ -258,6 +325,8 @@
           </div>
 
           <button type="submit" class="submit-button">Start Brute Force</button>
+          <a href="/main/tools" class="home-button">Return To Tools</a>
+
         </form>
       </div>
     {/if}
@@ -290,7 +359,7 @@
           </div>
         </div>
         <!-- Live Table -->
-        <div class = "results-table">
+        <div class = "results-table-scrollable">
         <table>
           <thead>
             <tr>
@@ -344,23 +413,49 @@
           </div>
         </div>
 
-        <div class = "results-table">
+        <div class = "results-table-scrollable">
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Status</th>
-              <th>Lines</th>
-              <th>Words</th>
-              <th>Chars</th>
+              <th on:click={() => sortTable('id')}>ID
+                {#if sortConfig.column === 'id'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
+              <th on:click={() => sortTable('response')}>Response
+                {#if sortConfig.column === 'response'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
+              <th on:click={() => sortTable('lines')}>Lines
+                {#if sortConfig.column === 'lines'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
+              <th on:click={() => sortTable('words')}>Words
+                {#if sortConfig.column === 'words'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
+              <th on:click={() => sortTable('chars')}>Chars
+                {#if sortConfig.column === 'chars'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
+              
               <th>Payload</th>
-              <th>Length</th>
+
+              <th on:click={() => sortTable('length')}>Length
+                {#if sortConfig.column === 'length'}
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                {/if}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {#each results as result, index}
+            {#each results as result (result.id)} <!-- Key by result.id -->
               <tr>
-                <td>{index + 1}</td>
+                <td>{result.id}</td> <!-- Display result.id instead of index + 1 -->
                 <td>{result.response}</td>
                 <td>{result.lines}</td>
                 <td>{result.words}</td>
@@ -371,7 +466,6 @@
             {/each}
           </tbody>
         </table>
-        <button on:click={(e) => { resultsToParams() }}>Back to Param Setup</button>
         {#if showResultsButton}
           <button on:click={exportResults}>Export Results</button>
         {/if}
@@ -380,6 +474,39 @@
     {/if}
   </div>
 </div>
+
+  <!-- ✅ These are always visible when done -->
+  {#if isRunning || displayingResults}
+  <div class="action-buttons-bottom">
+    <button on:click={pauseBruteForce}>Pause</button>
+    <button on:click={stopBruteForce}>Stop</button>
+    <button on:click={restartBruteForce}>Restart</button>
+    <button on:click={() => showTerminal = true}>View Terminal</button>
+    <button on:click={() => resultsToParams()}>Back to Param Setup</button>
+    {#if showResultsButton}
+      <button on:click={exportResults}>Export Results</button>
+    {/if}
+  </div>
+{/if}
+
+<!-- Optional fallback -->
+{#if !acceptingParams && !isRunning && !displayingResults}
+  <p style="color: red; text-align: center; margin-top: 2rem;">⚠️ Nothing is being displayed. Check state logic.</p>
+{/if}
+
+{#if showTerminal}
+  <div class="terminal-overlay">
+    <div class="terminal-window">
+      <div class="terminal-header">
+        <span>Terminal Output</span>
+        <button on:click={() => showTerminal = false}>✖</button>
+      </div>
+      <div class="terminal-content">
+        <pre>{logOutput}</pre>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .progress-bar {
@@ -396,13 +523,13 @@
     transition: width 0.3s ease;
   }
 
-  .results-table {
+  /* .results-table {
     margin-top: 20px; 
   }
 
   .results-table button {
     margin-top: 20px; 
-  }
+  } */
 
   .brute-section {
     background-color: #1f1f1f;
@@ -413,7 +540,7 @@
   }
 
   .bruteForceConfigPage {
-  width: 80%;  /* Adjusted width to give more space */
+  width: 100%;  /* Adjusted width to give more space */
   margin: 10vh auto; /* Centered with some spacing from the top */
   padding: 20px;
   background: transparent;
@@ -425,9 +552,96 @@
   color: #f5f5f5; /* Set text color to dark gray for better contrast */
 }
 
-  /* .error {
-    color: red;
-    font-size: 0.8rem;
-  } */
+  .results-table-scrollable {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin-top: 1rem;
+  }
+
+  .action-buttons-bottom {
+    margin-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .action-buttons-bottom button {
+    background-color:  #3b82f6;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .action-buttons-bottom button:hover {
+    background-color: #2563eb;
+  }
+
+  .terminal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+
+  .terminal-window {
+    background: #111;
+    color: rgb(255, 255, 255);
+    width: 80%;
+    max-height: 70vh;
+    border-radius: 8px;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+
+  .terminal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .terminal-content {
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Button styling */
+  .home-button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: #3b82f6;
+    cursor: pointer;
+    transition: border-color 0.25s;
+    text-decoration: none;
+    width: 100%;
+    max-width: 450px; /* Matches input size */
+    color: white;
+    text-align: center;
+
+  }
+
+  .home-button:hover {
+    background-color: #2563eb;
+  }
+  
+  .home-button:focus,
+  .home-button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+
 
 </style>
