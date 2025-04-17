@@ -20,8 +20,7 @@ from typing import Dict, Optional
 import json
 import csv
 import sys
-csv.field_size_limit(sys.maxsize)
-csv.field_size_limit(sys.maxsize)# logs whenever an endpoint is hit using logger.info
+csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("asyncio")
