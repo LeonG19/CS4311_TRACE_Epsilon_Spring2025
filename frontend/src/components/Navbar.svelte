@@ -17,7 +17,7 @@
   
   <style>
     .sidebar {
-      background-color: #f8f9fa;
+      background-color: #2e2e2e;
       padding: 1rem;
       height: 100vh;
       position: sticky;
@@ -30,7 +30,7 @@
       cursor: pointer;
       font-size: 1.5rem;
       font-weight: bold;
-      color: #333;
+      color: white;
     }
     .nav-item {
       margin: 0.75rem 0;
@@ -47,7 +47,7 @@
       transition: background-color 0.2s;
     }
     .nav-link:hover {
-      background-color: #e9ecef;
+      background-color: #242424;
     }
     .nav-link.active {
       background-color: #007bff;
@@ -75,7 +75,6 @@
       visibility: visible;
     }
   </style>
-  
   <nav class="sidebar col-md-2">
     <div class="logo" on:click={handleLogoClick} role="button" tabindex="0" on:keydown={(e) => e.key === 'Enter' && handleLogoClick()}>
       TRACE
