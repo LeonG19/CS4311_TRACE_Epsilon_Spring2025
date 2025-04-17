@@ -1,5 +1,13 @@
 <div class = "container">
     <nav class = "sidebar">
+
+        <div class="TraceLogo">
+            <a href="/main" title="Naviagtes back to Project Management page" on:click|preventDefault= {confirmNavigation}>
+                <i class ="fas fa-code-branch"></i>
+            </a>
+        </div>
+
+
         <div class="button-group">
 
             <a href ="/main/tools" title="Navigates back to the Tools Page">
@@ -16,20 +24,34 @@
                 <i class="fas fa-check"></i>
             </button>
 
-            <button class="barButtons" title="Navigates to the AI Credential Generator Page">
-                <i class="fas fa-brain"></i>
-            </button>
+            <a href ="/main/tools/AI" title="Navigates to the AI Credential Generator Page">
+                <button class="barButtons" >
+                    <i class="fas fa-brain"></i>
+                </button>
+            </a>
         </div>
 
-        <button class="barButtons settings" title="Navigates to the Settings Page">
-            <i class="fas fa-cog"></i>
-        </button>
+        <a href ="/main/settings" title="Navigates to the Settings Page">
+            <button class="barButtons settings" >
+                <i class="fas fa-cog"></i>
+            </button>
+        </a>
+        
 
     </nav>
     <div class = "main-content">
         <slot></slot>
     </div>
 </div>
+
+<script>
+    function confirmNavigation(event) {
+        const confirm = window.confirm("Are you sure you want to leave this page?");
+        if (confirm) {
+            window.location.href = "/main"
+        }
+    }
+</script>
 
 <style>
     .container {
@@ -51,6 +73,13 @@
         top: 0; /* Sticks to the top of the viewport */
         height: 100vh; /* Full height of the viewport */
     }
+
+    .TraceLogo {
+        margin-bottom: 1rem;
+        font-size: 2rem;
+
+    }
+
     .button-group {
         display: flex;
         flex-direction: column; /* Aligns buttons vertically */
