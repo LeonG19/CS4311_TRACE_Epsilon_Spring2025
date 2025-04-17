@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import Navbar from '../../components/Navbar.svelte';
+    import { page } from '$app/stores'; //Imports the page store
     import 'bootstrap/dist/css/bootstrap.min.css';
   
     // Load Bootstrap JS only in the browser
@@ -13,7 +14,9 @@
   
   <div class="container-fluid">
     <div class="row">
-      <Navbar />
+      {#if !$page.url.pathname.startsWith('/main/tools')}
+        <Navbar />
+      {/if}
       <main class="col-md-10 ms-sm-auto px-md-4">
         <slot />
       </main>
