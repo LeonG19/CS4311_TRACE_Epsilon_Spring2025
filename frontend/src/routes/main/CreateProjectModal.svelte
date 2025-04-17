@@ -28,7 +28,7 @@
         }
 
         try {
-            const response = await fetch(`http://localhost:9000/create/`, {
+            const response = await fetch(`http://localhost:8000/create/`, {
                 method: 'POST',
                 body: formData
             });
