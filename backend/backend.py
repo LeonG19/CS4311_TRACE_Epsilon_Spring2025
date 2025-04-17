@@ -342,7 +342,7 @@ async def save_userpassword(file: UploadFile = File(None)):
 @app.post("/display_userList")
 async def display_userList():
     usserpassword_list = []
-    for root, dirs, files in os.walk("/user_passwords_uploads"):
+    for root, dirs, files in os.walk("./user_passwords_uploads"):
         for file in files:
             usserpassword_list.append(file)
     return usserpassword_list
@@ -358,8 +358,15 @@ async def display_userpassword(file_path):
                 credentials.append((parts[0], parts[1]))
     return credentials
 
-@app.post("delete_userpassword")
-async def delete_userpassword(filename):
+class FilenameInput(BaseModel):
+    filename: str
+
+@app.post("/delete_userpassword")
+async def delete_userpassword(data: FilenameInput):
+    
+    filename = data.filename
+    print(f"Got filename: {filename}")
+
     for root, dirs, files in os.walk("/user_passwords_uploads"):
         if filename in files:
             file_path = os.path.join(root, filename)

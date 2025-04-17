@@ -237,6 +237,7 @@ class CredentialGeneratorMDP:
         self.min_username_length = int(user_length) 
         self.min_password_length = int(pass_length)
         self.stop_flag = False
+
     
     def stop_generating(self):
         self.stop_flag = True
