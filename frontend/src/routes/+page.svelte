@@ -7,7 +7,7 @@
 
   async function handleStart() {
       try{
-          const response = await fetch(`http://localhost:9000/analyst/${initials}/`,{
+          const response = await fetch(`http://localhost:8000/analyst/${initials}/`,{
               method: 'POST'
           });
           const data= await response.json();
