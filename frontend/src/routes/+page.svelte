@@ -10,7 +10,7 @@
     //if (initials.toUpperCase() === correctInitials.toUpperCase()) {
       // Redirect to the dashboard route.
       // Adjust the path in the goto function.
-      //goto('/routes/main/+page.svelte');
+      goto('/routes/main/+page.svelte');
     //} else {
       //errorMessage = 'Incorrect initials. Please try again.';
       //initials = '';
