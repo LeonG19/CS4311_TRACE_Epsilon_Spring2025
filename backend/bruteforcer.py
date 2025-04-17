@@ -1,9 +1,10 @@
-import requests
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
 import time
 import json
 import os
 import logging
+from urllib.parse import urljoin, urlparse, urlunparse
+from http_tester import send_http_request  # Importing from http_tester.py
+from proxy_logic import handle_proxy_request  # Importing from proxy_logic.py
 
 # Configure BruteForcer logging
 logging.basicConfig(level=logging.INFO)
@@ -40,30 +41,29 @@ class BruteForcer:
 
             scan_logger.info(f"Attempting: {full_url}")
 
-            response = requests.get(
-                full_url,
-                cookies=self.auth_cookies,
-                proxies={'http': self.network_proxy, 'https': self.network_proxy} if self.network_proxy else None,
-                timeout=5,
-                headers=headers
-            )
+            # Use proxy if specified, otherwise use direct request
+            if self.network_proxy:
+                result = handle_proxy_request(full_url, 'GET')  # Proxy request logic
+            else:
+                result = send_http_request(full_url, 'GET')  # Direct HTTP request using http_tester.py
 
-            content = response.text
+            content = result['body']
+            status_code = result['status_code']
             lines = content.count('\n')
             words = len(content.split())
             chars = len(content)
 
             return {
                 'url': full_url,
-                'status_code': response.status_code,
+                'status_code': status_code,
                 'lines': lines,
                 'words': words,
                 'chars': chars,
-                'length': len(response.content),
+                'length': len(content),
                 'error': False
             }
 
-        except requests.RequestException as e:
+        except Exception as e:
             scan_logger.error(f"Request error for payload '{payload}': {e}")
             return {
                 'url': full_url if 'full_url' in locals() else f"{url}/{payload}",
@@ -85,7 +85,7 @@ class BruteForcer:
 
         if self.content_length_filter is not None and result['length'] != self.content_length_filter:
             return False
-        
+
         return True
 
     def save_report_to_json(self):
@@ -169,10 +169,15 @@ class BruteForcer:
             else:
                 self.wordlist = [word_list_param]
 
-        # Parse status codes
+        # Parse status codes for filtering, with defaults
+        self.exclude_status_codes = []
+        self.include_status_codes = []
+
+        # If 'hide_status' is provided, parse it, otherwise leave it empty
         if 'hide_status' in scan_params and scan_params['hide_status']:
             self.exclude_status_codes = [int(code.strip()) for code in scan_params['hide_status'].split(',') if code.strip()]
 
+        # If 'show_status' is provided, parse it, otherwise leave it empty
         if 'show_status' in scan_params and scan_params['show_status']:
             self.include_status_codes = [int(code.strip()) for code in scan_params['show_status'].split(',') if code.strip()]
 
@@ -187,29 +192,5 @@ class BruteForcer:
         if 'proxy' in scan_params and scan_params['proxy']:
             self.network_proxy = scan_params['proxy']
 
-        # Display results
+        # Display results live
         self.display_results_live = scan_params.get('show_results', True)
-
-# this was for testintg on terminal ignore this 
-    # def configure_scan_parameters(self, scan_params):
-    #     """Configure scan parameters from user input."""
-    #     self.target_url = input("Enter target URL: ")
-
-    #     # Handle word list (file or list of strings)
-    #     word_list_param = input("Enter wordlist file path or list of words (comma separated): ").strip()
-        
-    #     # Remove quotes if present in the input (e.g., if the user accidentally adds quotes around the path)
-    #     if word_list_param.startswith('"') and word_list_param.endswith('"'):
-    #         word_list_param = word_list_param[1:-1]
-
-    #     if os.path.exists(word_list_param):  # Check if it's a valid file path
-    #         try:
-    #             with open(word_list_param, 'r') as file:
-    #                 self.wordlist = [line.strip() for line in file if line.strip()]
-    #         except Exception as e:
-    #             scan_logger.error(f"Error reading wordlist file: {e}")
-    #             self.wordlist = []  # Set to empty list if file reading fails
-    #     else:  # If it's not a valid path, assume it's a comma-separated list
-    #         self.wordlist = word_list_param.split(',')
-
-    #     scan_logger.info(f"Wordlist loaded: {self.wordlist}")

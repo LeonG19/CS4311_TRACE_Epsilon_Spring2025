@@ -1,20 +1,28 @@
 <script>
-  //import { goto } from '$app/navigation'; // Import the goto function for navigation
+  import { goto } from '$app/navigation'; // Import the goto function for navigation
 
   let initials = '';
   let errorMessage = null;
   const correctInitials = 'MR'; 
 
   async function handleStart() {
-    window.location.href = "/main";
-    //if (initials.toUpperCase() === correctInitials.toUpperCase()) {
-      // Redirect to the dashboard route.
-      // Adjust the path in the goto function.
-      //goto('/routes/main/+page.svelte');
-    //} else {
-      //errorMessage = 'Incorrect initials. Please try again.';
-      //initials = '';
-    //}
+      try{
+          const response = await fetch(`http://localhost:8000/analyst/${initials}/`,{
+              method: 'POST'
+          });
+          const data= await response.json();
+          if (data['status']==='success'){
+              sessionStorage.setItem('analyst_initials', initials);
+              goto('/main');
+              
+          }else{
+              initials='';
+              throw new Error(`Failed to check analyst`);
+          }
+      } catch (err){
+          errorMessage= err.message + ': ERROR';
+          console.error('Fetch error:', err);
+      }
   }
 </script>
 
@@ -134,16 +142,7 @@
 
 <!-- Landing Page -->
 <div class="landing-section">
-  <!-- Header Navigation -->
-  <header>
-    <nav>
-      <!--
-      <a href="#">Dashboard</a>
-      <a href="#">Settings</a>
-      -->
-    </nav>
-  </header>
-  
+
   <!-- Main Content -->
   <main>
     <h1>TRACE</h1>
