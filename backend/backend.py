@@ -295,6 +295,7 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     mdp3.nlp_subroutine(csv_path)
 
     data = json.loads(data)
+    global generator
     generator = CredentialGeneratorMDP(
         csv_path= csv_path,
         wordlist_path= file_word,
@@ -313,6 +314,61 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
     return {"credentials": credentials}
+
+# control endpoints for the fuzzer
+@app.post("/stop_AI")
+async def stopAI():
+    global generator
+    if generator:
+        generator.stop_generating()
+        generator = CredentialGeneratorMDP()
+        return {"message": "AI stopping requested"}
+    return {"message": "No active AI to stop"}
+
+@app.post("/save_userpassword")
+async def save_userpassword(file: UploadFile = File(None)):
+    file_word = ""
+    try:
+        if file:
+            # Save the uploaded file
+            file_location = f"./user_passwords_uploads/{file.filename}"
+            with open(file_location, "wb") as buffer:
+                buffer.write(await file.read())
+            file_word= file_location  # Store file path in dictionary
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"saved_state": file.filename}
+
+@app.post("/display_userList")
+async def display_userList():
+    usserpassword_list = []
+    for root, dirs, files in os.walk("/user_passwords_uploads"):
+        for file in files:
+            usserpassword_list.append(file)
+    return usserpassword_list
+
+@app.post("/display_userpassword")
+async def display_userpassword(file_path):
+    credentials = []
+    with open(file_path, 'r') as file:
+        next(file)  # Skip header line
+        for line in file:
+            parts = line.strip().split(',')
+            if len(parts) == 2:
+                credentials.append((parts[0], parts[1]))
+    return credentials
+
+@app.post("delete_userpassword")
+async def delete_userpassword(filename):
+    for root, dirs, files in os.walk("/user_passwords_uploads"):
+        if filename in files:
+            file_path = os.path.join(root, filename)
+            os.remove(file_path)
+            print(f"Deleted: {file_path}")
+            return True
+    print(f"File '{filename}' not found in 'user_passwords_uploads'.")
+    return False
+
 
 
 ##

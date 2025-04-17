@@ -236,7 +236,11 @@ class CredentialGeneratorMDP:
         self.password_mdp = CredentialMDP(order=3)
         self.min_username_length = int(user_length) 
         self.min_password_length = int(pass_length)
-        
+        self.stop_flag = False
+    
+    def stop_generating(self):
+        self.stop_flag = True
+
     def allowed_username_char(self, ch: str) -> bool:
         # Check if the character is alphabetic and whether letters are allowed
         if ch.isalpha() and not self.user_include_char:
@@ -379,6 +383,8 @@ class CredentialGeneratorMDP:
         self.build_state_transitions()
         credentials = []
         for _ in range(count):
+            if self.stop_flag:
+                return
             username, password = self.generate_credential()
             credentials.append((username, password))
         return credentials
