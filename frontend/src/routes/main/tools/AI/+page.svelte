@@ -158,7 +158,7 @@
 
                 {wordlistInput.label}
                 <input accept=wordlistInput.accept type={wordlistInput.type} placeholder={wordlistInput.example} requirement={wordlistInput.required} onchange={handleFile}/>
-                
+             
                 <div class="input-container">
                   <div class="column">
                   <label>Username</label>
