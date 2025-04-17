@@ -1,10 +1,10 @@
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
 from crawler import Crawler
-from typing import Optional
+from typing import List, Optional
 import logging
 from fastapi.responses import StreamingResponse
 import json
@@ -14,8 +14,14 @@ import os
 import shutil
 import requests
 import neo4j.time
+import mdp3
+from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
+from typing import Dict, Optional
+import json
+import csv
+import sys
+csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 
-# logs whenever an endpoint is hit using logger.info
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("asyncio")
 
@@ -211,6 +217,103 @@ async def upload_wordlist(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error uploading wordlist file {str(e)}")
         return {"error !": str(e)}, 500
+    
+def extract_services_sites(json_paths: list[str],
+                           csv_path: str = 'services_sites/services_sites.csv') -> bool:
+    # Ensure the folder for the CSV exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    valid_data = []
+    at_least_one_valid = False
+
+    # Check each JSON path
+    for idx, path in enumerate(json_paths):
+        if os.path.isfile(path):
+            at_least_one_valid = True
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for entry in data:
+                        valid_data.append((entry.get('id'), entry.get('url')))
+            except Exception as e:
+                print(f"Error reading {path}: {e}")
+                continue
+        else:
+            if idx == 0:
+                # First JSON is required (crawler)
+                print("Crawler JSON path is invalid or missing.")
+                return False
+
+    if not at_least_one_valid:
+        print("No valid JSON files provided.")
+        return False
+
+    try:
+        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'website'])
+            writer.writerows(valid_data)
+        return True  # Success
+    except Exception as e:
+        print(f"Unexpected error while writing CSV: {e}")
+        return False
+  
+
+class AIParams(BaseModel):
+    params: Dict[str, str | bool | int] = Field(default_factory=dict)
+
+
+@app.post("/generate-credentials")
+async def generate_credentials_endpoint(file: UploadFile = File(None), data: str = Form(...)):
+    #logging.info(f"Received credential generation request: {req}")
+    file_word = ""
+    try:
+        if file:
+            # Save the uploaded file
+            file_location = f"./wordlist_uploads/{file.filename}"
+            with open(file_location, "wb") as buffer:
+                buffer.write(await file.read())
+            file_word= file_location  # Store file path in dictionary
+ 
+ 
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    craw_state = extract_services_sites([
+    'outputs_crawler/crawl_results.json',      # required
+    'outputs_bruteforcer/brute_force_results.json',         # optional
+    'outputs_fuzzer/fuzz_results.json'                 # optional
+    ])
+
+    if (craw_state == False):
+        return {"crawler": craw_state}
+       
+    urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
+    csv_path = "./csv_uploads/web_text.csv"
+    scrapper = WebScraper(urls)
+    scrapper.generate_csv(csv_path)
+    mdp3.nlp_subroutine(csv_path)
+
+    data = json.loads(data)
+    generator = CredentialGeneratorMDP(
+        csv_path= csv_path,
+        wordlist_path= file_word,
+        user_include_char = data["userChar"],
+        user_include_num = data["userNum"],
+        user_include_sym = data["userSymb"],
+        user_length = data["userLen"],
+
+        pass_include_char = data["passChar"],
+        pass_include_num = data["passNum"],
+        pass_include_sym = data["passSymb"], 
+        pass_length = data["passLen"] 
+    )
+    credentials = generator.generate_credentials(10)
+    print("\nGenerated Credentials:")
+    for username, password in credentials:
+        print(f"Username: {username}, Password: {password}")
+    return {"credentials": credentials}
+
 
 ##
 ## TEAM 10 PART
