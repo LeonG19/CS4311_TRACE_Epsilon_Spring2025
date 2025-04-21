@@ -325,7 +325,6 @@
           </div>
 
           <button type="submit" class="submit-button">Start Brute Force</button>
-          <a href="/main/tools" class="home-button">Return To Tools</a>
 
         </form>
       </div>
