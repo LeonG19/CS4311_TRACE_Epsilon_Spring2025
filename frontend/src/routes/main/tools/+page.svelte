@@ -14,6 +14,10 @@
     function gotoAI() {
       window.location.href = "/main/tools/AI";
     }
+
+    function gotosql() {
+      window.location.href = "/main/tools/sql";
+    }
     
     </script>
     <nav>
@@ -37,6 +41,11 @@
         <div class="row">
           <div><span> AI Credential Generator </span></div>
           <div><button on:click={gotoAI} title="Navigates to the AI Credential Generastor page">Select</button></div>
+        </div>
+
+        <div class="row">
+          <div><span> Sequal Injector </span></div>
+          <div><button on:click={gotosql} title="Navigates to the Sequal Injector page">Select</button></div>
         </div>
         
       </div>
