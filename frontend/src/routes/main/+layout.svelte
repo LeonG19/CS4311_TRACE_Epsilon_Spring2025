@@ -34,8 +34,9 @@
 
 </script>
 
+<!-- This is where the containers to hold either the main menu side bar or the tools sidebar is created-->
 <div class="container">
-  <nav class="sidebar" style="width: {isToolsPage ? '100px' : '200px'};">
+  <nav class="sidebar" style="width: {isToolsPage ? '100px' : '100px'};">
       <div class="TraceLogo">
           <a href="/main" title="Navigates back to Project Management page" on:click = {handleLogoClick}>
               <i class="fas fa-code-branch"></i>
@@ -59,12 +60,15 @@
 </div>
 
 <style>
+
   .container {
       display: flex;
-      height: 100vh;
+      height: 100%; /* Gotta fix this fuck shit */
+      width: 100%;
       overflow: auto;
       margin: 0;
       padding: 0;
+      border: 2px solid #c60c0c;
   }
 
   .sidebar {
@@ -77,7 +81,8 @@
       align-items: center;
       position: sticky;
       top: 0;
-      height: 100vh;
+      height: 100%;
+      width: 100%;
       transition: width 0.3s ease; /* Smooth transition for width changes */
   }
 
@@ -114,5 +119,6 @@
   .main-content {
       flex: 1;
       padding: 1rem;
+      border: 2px solid #0c2bc6;
   }
 </style>
