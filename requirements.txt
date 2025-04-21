@@ -1,3 +1,6 @@
 beautifulsoup4
 numpy
 requests
+fastapi
+python-multipart
+
