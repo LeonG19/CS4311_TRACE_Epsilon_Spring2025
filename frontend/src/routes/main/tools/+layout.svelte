@@ -20,10 +20,6 @@
                 <i class="fas fa-tree"></i>
             </button>
 
-            <button class="barButtons" title="Naviagtes to the Results Page">
-                <i class="fas fa-check"></i>
-            </button>
-
             <a href ="/main/tools/AI" title="Navigates to the AI Credential Generator Page">
                 <button class="barButtons" >
                     <i class="fas fa-brain"></i>
