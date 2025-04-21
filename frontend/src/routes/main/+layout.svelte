@@ -118,5 +118,6 @@
       flex: 1;
       padding: 1rem;
       overflow: auto;
+      background-color: #1e1e1e
   }
 </style>
