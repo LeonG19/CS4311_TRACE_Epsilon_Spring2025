@@ -21,6 +21,7 @@
   // Dynamically choose the sidebar items based on the route
   $: sidebarItems = isToolsPage ? toolsSidebarItems : mainSidebarItems;
 
+  // Pop up to confirm if user wishes to leave the tools page.
   function handleLogoClick(event) {
     if (isToolsPage) {
       const confirmed = window.confirm("Are you sure you wish to leave this page?");
@@ -63,9 +64,8 @@
 
   .container {
       display: flex;
-      height: 100%; /* Gotta fix this fuck shit */
+      height: 100%;
       width: 100%;
-      overflow: auto;
       margin: 0;
       padding: 0;
       border: 2px solid #c60c0c;
@@ -81,9 +81,6 @@
       align-items: center;
       position: sticky;
       top: 0;
-      height: 100%;
-      width: 100%;
-      transition: width 0.3s ease; /* Smooth transition for width changes */
   }
 
   .TraceLogo {
