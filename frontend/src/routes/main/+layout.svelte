@@ -72,7 +72,7 @@
   }
 
   .sidebar {
-      background-color: #1f1f1f;
+      background-color: #2e2e2e;
       color: #646cff;
       padding: 1rem;
       display: flex;
