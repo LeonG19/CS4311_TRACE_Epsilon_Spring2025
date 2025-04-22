@@ -16,7 +16,7 @@
         formData.append('folder_name', folderName);
 
         try {
-            const response = await fetch('http://localhost:9000/create_folder/', {
+            const response = await fetch('http://localhost:8000/create_folder/', {
                 method: 'POST',
                 body: formData
             });
