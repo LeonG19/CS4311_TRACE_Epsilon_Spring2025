@@ -408,7 +408,7 @@ async def dashboard(initials):
             project["Stamp_Date"] = project["Stamp_Date"].iso_format()
     return {"my_projects": my_projects, "shared_projects": shared_projects}
 
-@app.get("/folders/")
+@app.get("/create_folder/")
 async def get_folders():
     result=pm.get_folders()
     for folders in result:
