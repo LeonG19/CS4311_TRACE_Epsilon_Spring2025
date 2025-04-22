@@ -1,13 +1,11 @@
 <script>
-  import { goto, pushState } from '$app/navigation'; // Import the goto function for navigation
+  import { goto } from '$app/navigation'; // Import the goto function for navigation
 
   let initials = '';
   let errorMessage = null;
   const correctInitials = 'MR'; 
 
   async function handleStart() {
-    alert(initials);
-
       try{
           const response = await fetch(`http://localhost:8000/analyst/${initials}/`,{
               method: 'POST'
@@ -38,8 +36,7 @@
       });
 
       if (response.ok) {
-          console.log(response.body)
-          handleStart();
+          handleStart(); //Handle login after creating analyst
       } else {
           const data = await response.json();
           throw new Error( data.error || 'Failed to create analyst initials');

@@ -493,5 +493,4 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 @app.post("/create_initials/{initials}/")
 async def create_initials(initials:str):
     result=n4ji.create_Analyst(" ", "analyst", initials) 
-    print(result.items)
     return {"status": "success"}
