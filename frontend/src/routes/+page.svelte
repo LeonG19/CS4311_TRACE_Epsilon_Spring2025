@@ -1,11 +1,13 @@
 <script>
-  import { goto } from '$app/navigation'; // Import the goto function for navigation
+  import { goto, pushState } from '$app/navigation'; // Import the goto function for navigation
 
   let initials = '';
   let errorMessage = null;
   const correctInitials = 'MR'; 
 
   async function handleStart() {
+    alert(initials);
+
       try{
           const response = await fetch(`http://localhost:8000/analyst/${initials}/`,{
               method: 'POST'
@@ -23,6 +25,30 @@
           errorMessage= err.message + ': ERROR';
           console.error('Fetch error:', err);
       }
+  }
+
+  async function handleInitCreation() {
+    const formData = new FormData();
+    formData.append('analyst_initials', initials);
+
+    try {
+      const response = await fetch(`http://localhost:8000/create_initials/${initials}/`,{
+          method: 'POST',
+          body: formData
+      });
+
+      if (response.ok) {
+          console.log(response.body)
+          handleStart();
+      } else {
+          const data = await response.json();
+          throw new Error( data.error || 'Failed to create analyst initials');
+      }
+      
+    } catch (err) {
+        errorMessage= err.message + ': ERROR';
+        console.error('Fetch error:', err);
+    }
   }
 </script>
 
@@ -84,6 +110,11 @@
     max-width: 700px;
   }
 
+  .register-sub{
+    font-size: 1rem;
+    margin-top: 2rem;
+  }
+
   .error {
     color: #b91c1c;
     font-weight: bold;
@@ -138,6 +169,14 @@
   .welcome-box button:hover {
     background-color: #2563eb;
   }
+
+  .register-button{
+    background-color: #555555 !important;
+  }
+
+  .register-button:hover{
+    background-color: #4A4A4A !important;
+  }
 </style>
 
 <!-- Landing Page -->
@@ -163,6 +202,10 @@
         bind:value={initials}
       />
       <button on:click={handleStart}>START</button>
+
+      <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
+      <p class="register-sub">Don't have your initials registered?</p>
+      <button class="register-button" on:click={handleInitCreation}>Register Initials</button>
     </div>
   </main>
 </div>
