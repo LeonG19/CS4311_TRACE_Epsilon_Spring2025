@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlparse
 import time, json, os
 from collections import deque
 import asyncio
+from http_tester import send_http_request
 
 class Crawler:
     def __init__(self, json_filename='crawl_results.json'): #this feels incorrect but idk how else to handle json
@@ -29,13 +30,16 @@ class Crawler:
             headers = {}
             if self.user_agent_string != '':
                 headers["User-Agent"] = self.user_agent_string
-            response = requests.get(url, timeout=5, headers=headers) # here use the user agent string for requests
-            if response.status_code == 200: # takes valid urls
-                return False #No error found (this is for table)
+            response = send_http_request(url, "GET", headers)
+            #response = requests.get(url, timeout=5, headers=headers) # here use the user agent string for requests
+            if response["status_code"] == 200: # takes valid urls
+                print('hi')
+                return False, response #No error found (this is for table)
             else:
-                return True # returning true if error occured (this is for the table)
+                print("hello")
+                return True, response # returning true if error occured (this is for the table)
         except requests.RequestException: #general exeption catching we will have an error handler class to handle this
-            return True #returning true since error must have occursed (this is for the table)
+            return True, response #returning true since error must have occursed (this is for the table)
     
     #fine for backend
     def retreieve_links_to_crawl(self, parsed_html, base_url):
@@ -54,7 +58,7 @@ class Crawler:
     
     #retrieves information asked for EXCEPT Errors (will ask, not sure what this entry would look like), and adds to JSON type format, (not quite json though watch out)
 
-    def retreive_url_info(self, parsed_html, url, links, error = False):
+    def retreive_url_info(self, parsed_html, url, links, severity, error = False):
         if not url:  # Check if URL is None or empty
             print("Invalid URL: ", url)  # Log invalid URL for debugging
             return  # Early exit if URL is invalid
@@ -65,8 +69,6 @@ class Crawler:
         word_count = len(words)
         link_count = len(links)
         title = parsed_html.title.string if parsed_html and parsed_html.title else "No Title"
-        #for debugging
-        #print(f"Crawled info: URL={url}, Title={title}, Word Count={word_count}, Char Count={char_count}, Link Count={link_count}, Error={error}")
 
         crawled_urls_entry = {
             'id': len(self.crawled_urls),
@@ -75,7 +77,8 @@ class Crawler:
             'word_count': word_count,
             'char_count': char_count,
             'link_count': link_count,
-            'error': error  # Adding error field (True if error occurred, False otherwise)
+            'error': error, # Adding error field (True if error occurred, False otherwise), 
+            'severity': severity
         }
         # url_info = CrawledURLInfo(url, title, word_count, char_count, link_count, words)
         # return url_info
@@ -97,7 +100,8 @@ class Crawler:
                             'word_count': entry['word_count'],
                             'char_count': entry['char_count'],
                             'link_count': entry['link_count'],
-                            'error': entry['error']
+                            'error': entry['error'],
+                            'severity': entry['severity']
                         })
                     else:
                         print(f"Warning: 'url' key missing in entry: {entry}") #trying to find where that empty URL is coming from
@@ -138,23 +142,25 @@ class Crawler:
                 continue
 
             self.visited_urls.add(url)
-            error_occurred = self.fetch_page(url)
+            error_occurred, response = self.fetch_page(url)
+            status_severity = self.calculate_severity(response["status_code"])
+            print(status_severity, response["status_code"])
 
             if not error_occurred:
-                response = requests.get(url, timeout=5, headers={"User-Agent": self.user_agent_string})
-                if response.status_code == 200:
-                    html = response.text  # Use the HTML content from the successful response
+                # response = requests.get(url, timeout=5, headers={"User-Agent": self.user_agent_string})
+                if response["status_code"] == 200:
+                    html = response["body"] # Use the HTML content from the successful response
                     parsed_html = BeautifulSoup(html, "html.parser")
                     # sets up crawled urls info
                     links = self.retreieve_links_to_crawl(parsed_html, url)
-                    self.retreive_url_info(parsed_html, url, links, error=False)  # No error occurred 
+                    self.retreive_url_info(parsed_html, url, links, status_severity, error=False)  # No error occurred 
                     self.tree_structure[url] = list(links)  # Store links in the tree structure
                     queue.extend(links)  # Add found links to the queue
                     filtered_requests += 1  # Increment filtered requests for successful responses
                 else:
-                    self.retreive_url_info(None, url, [], error=True) #True if error has indeed occurred
+                    self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
             else:
-                self.retreive_url_info(None, url, [], error=True) #True if error has indeed occurred
+                self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
 
             processed_requests += 1  # Increment processed requests
 
@@ -180,9 +186,21 @@ class Crawler:
         self.requests_per_sec = round(((len(self.crawled_urls)) / self.crawl_time), 2)
         self.save_json()
 
+    def calculate_severity(self, status):
+
+        if status < 100 or status >= 600:
+            return "Unknown"
+        elif status >= 100 and status < 200:
+            return "Info"
+        elif status >= 200 and status < 300:
+            return "Low"
+        elif status >= 300 and status < 400:
+            return "Medium"
+        else:
+            return "High"     
+    
     def stop_crawl(self):
         self.stop_flag = True
-
     def pause_crawl(self):
         self.pause_flag = True
     def resume_crawl(self):

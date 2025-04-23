@@ -1,74 +1,242 @@
 [
     {
         "id": 1,
-        "url": "https://discord.com",
-        "title": "Discord - Group Chat That\u00e2\u0080\u0099s All Fun & Games",
-        "word_count": 376,
-        "char_count": 3671,
-        "link_count": 50,
-        "error": false
+        "url": "https://www.apple.com",
+        "title": "Apple",
+        "word_count": 3989,
+        "char_count": 24748,
+        "link_count": 78,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 2,
-        "url": "https://discord.com/",
-        "title": "Discord - Group Chat That\u00e2\u0080\u0099s All Fun & Games",
-        "word_count": 376,
-        "char_count": 3671,
-        "link_count": 49,
-        "error": false
+        "url": "https://www.apple.com/health/",
+        "title": "Apple Health - Apple",
+        "word_count": 3712,
+        "char_count": 24973,
+        "link_count": 104,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 3,
-        "url": "https://discord.com/ads/quests",
-        "title": "Discord Quests - Advertise Where the World Plays",
-        "word_count": 682,
-        "char_count": 6074,
-        "link_count": 58,
-        "error": false
+        "url": "https://www.apple.com/apple-news/",
+        "title": "Apple News+ - Apple",
+        "word_count": 1513,
+        "char_count": 10604,
+        "link_count": 77,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 4,
-        "url": "https://discord.com/safety-teen-charter",
-        "title": "A Charter for a Better Place to Hang Out Online | Discord",
-        "word_count": 1091,
-        "char_count": 8728,
-        "link_count": 51,
-        "error": false
+        "url": "https://www.apple.com/diversity/",
+        "title": "Inclusion & Diversity - Apple",
+        "word_count": 4568,
+        "char_count": 32125,
+        "link_count": 73,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 5,
-        "url": "https://discord.com/category/safety",
-        "title": "Discord Blog",
-        "word_count": 481,
-        "char_count": 4711,
-        "link_count": 82,
-        "error": false
+        "url": "https://www.apple.com/sitemap/",
+        "title": "Site Map - Apple",
+        "word_count": 1206,
+        "char_count": 10055,
+        "link_count": 252,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 6,
-        "url": "https://discord.com/branding",
-        "title": "Discord's Brand Guidelines",
-        "word_count": 527,
-        "char_count": 4703,
-        "link_count": 44,
-        "error": false
+        "url": "https://www.apple.com/healthcare/apple-watch/",
+        "title": "No Title",
+        "word_count": 0,
+        "char_count": 0,
+        "link_count": 0,
+        "error": true,
+        "severity": "Medium"
     },
     {
         "id": 7,
-        "url": "https://discord.com/gaming",
-        "title": "Gaming | Discord",
-        "word_count": 429,
-        "char_count": 3957,
-        "link_count": 43,
-        "error": false
+        "url": "https://www.apple.com/accessibility/",
+        "title": "Accessibility - Apple",
+        "word_count": 3785,
+        "char_count": 25059,
+        "link_count": 89,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 8,
-        "url": "https://discord.com/servers",
-        "title": "Discord Servers - Home",
-        "word_count": 530,
-        "char_count": 4558,
-        "link_count": 47,
-        "error": false
+        "url": "https://www.apple.com/privacy/",
+        "title": "Privacy - Apple",
+        "word_count": 2244,
+        "char_count": 14859,
+        "link_count": 76,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 9,
+        "url": "https://www.apple.com/ipad/",
+        "title": "iPad - Apple",
+        "word_count": 1431,
+        "char_count": 9980,
+        "link_count": 98,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 10,
+        "url": "https://www.apple.com/us/shop/goto/help/sales_refunds",
+        "title": "No Title",
+        "word_count": 0,
+        "char_count": 0,
+        "link_count": 0,
+        "error": true,
+        "severity": "Medium"
+    },
+    {
+        "id": 11,
+        "url": "https://www.apple.com/iphone/",
+        "title": "iPhone - Apple",
+        "word_count": 9384,
+        "char_count": 61444,
+        "link_count": 102,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 12,
+        "url": "https://www.apple.com/today/camp/",
+        "title": "Today at Apple - Apple Camp - Apple",
+        "word_count": 370,
+        "char_count": 2586,
+        "link_count": 62,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 13,
+        "url": "https://www.apple.com/shop/trade-in#recycle",
+        "title": "Apple Trade In - Apple",
+        "word_count": 2461,
+        "char_count": 21680,
+        "link_count": 64,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 14,
+        "url": "https://www.apple.com/apple-pay/",
+        "title": "Apple Pay - Apple",
+        "word_count": 3035,
+        "char_count": 18363,
+        "link_count": 75,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 15,
+        "url": "https://www.apple.com/education-initiative/",
+        "title": "Education - Apple",
+        "word_count": 8679,
+        "char_count": 58311,
+        "link_count": 64,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 16,
+        "url": "https://www.apple.com/retail/business/",
+        "title": "Small Business and Apple Retail - Apple",
+        "word_count": 565,
+        "char_count": 3891,
+        "link_count": 63,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 17,
+        "url": "https://www.apple.com/app-store/",
+        "title": "App Store - Apple",
+        "word_count": 1894,
+        "char_count": 12829,
+        "link_count": 58,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 18,
+        "url": "https://www.apple.com/legal/privacy/",
+        "title": "Legal - Privacy Policy - Apple",
+        "word_count": 309,
+        "char_count": 2461,
+        "link_count": 46,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 19,
+        "url": "https://www.apple.com/mac/mac-does-that/",
+        "title": "Mac - Mac Does That - Switch to Mac - Apple",
+        "word_count": 4310,
+        "char_count": 28449,
+        "link_count": 100,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 20,
+        "url": "https://www.apple.com/healthcare/",
+        "title": "Healthcare - Apple",
+        "word_count": 1328,
+        "char_count": 9657,
+        "link_count": 60,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 21,
+        "url": "https://www.apple.com/healthcare/mac/",
+        "title": "No Title",
+        "word_count": 0,
+        "char_count": 0,
+        "link_count": 0,
+        "error": true,
+        "severity": "Medium"
+    },
+    {
+        "id": 22,
+        "url": "https://www.apple.com/us/shop/goto/bag",
+        "title": "No Title",
+        "word_count": 0,
+        "char_count": 0,
+        "link_count": 0,
+        "error": true,
+        "severity": "Medium"
+    },
+    {
+        "id": 23,
+        "url": "https://www.apple.com/apple-podcasts/",
+        "title": "Apple Podcasts - Apple",
+        "word_count": 1395,
+        "char_count": 9935,
+        "link_count": 60,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 24,
+        "url": "https://www.apple.com/wallet/",
+        "title": "Wallet - Apple",
+        "word_count": 3859,
+        "char_count": 24132,
+        "link_count": 69,
+        "error": false,
+        "severity": "Low"
     }
 ]
