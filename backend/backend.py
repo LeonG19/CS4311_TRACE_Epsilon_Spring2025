@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
+from fastapi import FastAPI, File, UploadFile, Form,  HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
@@ -469,6 +469,14 @@ async def export_project(projectName: str):
             return result
         else:
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
+    except Exception as e:
+        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+@app.post("/submit_results/{result_type}")
+async def submit_results(request: Request, result_type):
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type)
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
 
