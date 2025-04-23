@@ -443,6 +443,7 @@ function urlToFilename(url) {
                   <th onclick={() => sortTable('char_count')}>Character Count</th>
                   <th onclick={() => sortTable('link_count')}>Links</th>
                   <th>Error</th>
+                  <th>Severity</th>
                 </tr>
               </thead>
               <tbody>
@@ -455,6 +456,7 @@ function urlToFilename(url) {
                   <td>{crawledURL.char_count}</td>
                   <td>{crawledURL.link_count}</td>
                   <td>{crawledURL.error ? 'True' : 'False'}</td>
+                  <td>{crawledURL.severity}</td>
                 </tr>
                 {/each}
               </tbody>
@@ -528,6 +530,7 @@ function urlToFilename(url) {
                 </th>
               
                 <th>Error</th>
+                <th>Severity</th>
               </tr>
             </thead>
             <tbody>
@@ -540,6 +543,7 @@ function urlToFilename(url) {
                 <td>{crawledURL.char_count}</td>
                 <td>{crawledURL.link_count}</td>
                 <td>{crawledURL.error ? 'True' : 'False'}</td>
+                <td>{crawledURL.severity}</td>
               </tr>
               {/each}
             </tbody>
