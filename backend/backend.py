@@ -480,6 +480,18 @@ async def submit_results(request: Request, result_type):
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
 
+@app.post("/project_folder/{folder_name}")
+async def get_projects_in_folder(folder_name: str):
+    result = pm.get_projects_in_folder(folder_name)
+    for project in result:
+        if "creation_date" in project and isinstance(project["creation_date"], neo4j.time.DateTime):
+            project["creation_date"] = project["creation_date"].iso_format()
+        if "last_edit_date" in project and isinstance(project["last_edit_date"], neo4j.time.DateTime):
+            project["last_edit_date"] = project["last_edit_date"].iso_format()
+        if "stamp_date" in project and isinstance(project["stamp_date"], neo4j.time.DateTime):
+                    project["stamp_date"] = project["stamp_date"].iso_format()
+    return {"projects": result}
+
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
     CORSMiddleware,

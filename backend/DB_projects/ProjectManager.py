@@ -112,6 +112,9 @@ class ProjectManager:
     def submit_results(self, json_data, result_type):
         result = self.neo4j.process_Response(json_data, result_type)
         return result.get("status") == "success" if isinstance(result, dict) else True
+    
+    def get_projects_in_folder(self, folder_name):
+        return self.neo4j.get_projects_in_folder(folder_name)
 
     #doesnt work anymore
     #def get_deleted_projects(self):
