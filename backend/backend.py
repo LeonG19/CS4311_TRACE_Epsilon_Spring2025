@@ -20,6 +20,7 @@ from typing import Dict, Optional
 import json
 import csv
 import sys
+from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 
 logging.basicConfig(level=logging.DEBUG)
@@ -471,6 +472,27 @@ async def export_project(projectName: str):
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+
+    
+class SQLRequest(BaseModel):
+    target_url: str
+    port: int
+    timeout: int = 5
+    headers: dict = {}
+    enum_level: int = 0
+
+@app.post("/api/sql_injection")
+async def sql_inject(req: SQLRequest):
+    injector = SQLInjectionManager()
+    results = injector.perform_sql_injection(
+        req.target_url,
+        req.port,
+        timeout=req.timeout,
+        headers=req.headers,
+        enum_level=req.enum_level
+    )
+    return results
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(

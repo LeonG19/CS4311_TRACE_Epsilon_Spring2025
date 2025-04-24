@@ -1,5 +1,5 @@
 <script lang="ts">
-    import '../Crawler/crawler.css';
+    
   
     // ──────────────────────────── state ────────────────────────────
     let target_url = '';
