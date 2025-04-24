@@ -53,8 +53,8 @@
         </div>
 
         <div class="row">
-          <div><span> Sequal Injector </span></div>
-          <div><button on:click={gotosql} title="Navigates to the Sequal Injector page">Select</button></div>
+          <div><span> SQL Injector </span></div>
+          <div><button on:click={gotosql} title="Navigates to the SQL Injector page">Select</button></div>
         </div>
         
       </div>
