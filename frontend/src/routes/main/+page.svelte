@@ -109,7 +109,7 @@
           project.name === projectName ? { ...project, locked: false, Status: 'Active' } : project
         );
         recent_projects=recent_projects.map(project=>
-          project.name === projectName ? {...project, locked: falsex, Status: 'Active'}: project
+          project.name === projectName ? {...project, locked: false, Status: 'Active'}: project
         );
         // Update sharedProjects if the project exists there
         sharedProjects = sharedProjects.map(project =>

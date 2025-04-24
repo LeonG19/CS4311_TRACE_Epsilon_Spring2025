@@ -3,4 +3,4 @@ numpy
 requests
 fastapi
 python-multipart
-
+neo4j

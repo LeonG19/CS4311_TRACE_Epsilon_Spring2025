@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
+from fastapi import FastAPI, File, UploadFile, Form,  HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
@@ -472,6 +472,26 @@ async def export_project(projectName: str):
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+@app.post("/submit_results/{result_type}")
+async def submit_results(request: Request, result_type):
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type)
+    except Exception as e:
+        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+
+@app.post("/project_folder/{folder_name}")
+async def get_projects_in_folder(folder_name: str):
+    result = pm.get_projects_in_folder(folder_name)
+    for project in result:
+        if "creation_date" in project and isinstance(project["creation_date"], neo4j.time.DateTime):
+            project["creation_date"] = project["creation_date"].iso_format()
+        if "last_edit_date" in project and isinstance(project["last_edit_date"], neo4j.time.DateTime):
+            project["last_edit_date"] = project["last_edit_date"].iso_format()
+        if "stamp_date" in project and isinstance(project["stamp_date"], neo4j.time.DateTime):
+                    project["stamp_date"] = project["stamp_date"].iso_format()
+    return {"projects": result}
     
 
     
