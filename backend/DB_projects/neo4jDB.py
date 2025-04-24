@@ -250,8 +250,30 @@ class Neo4jInteractive:
             return {"status": "failure", "error": "No project or folder received"}
         query= """MATCH (u:Project {name: $name}), (f:Folder{path:$folder_path}) 
                 MERGE (u)-[:IS_IN]->(f)"""
-        with self.driver.session() as session:
-            session.run(query, name=str(project_name), folder_path=str(folder_path))
+        try:
+            with self.driver.session() as session:
+                session.run(query, name=str(project_name), folder_path=str(folder_path))
+                return {"status": "success"}
+        except Exception as e:
+            return {"status": "failure", "error": f"Failed to insert record: {str(e)}"}
+        
+    def get_projects_in_folder(self, folder_name):
+        if not folder_name:
+            return {"status": "failure", "error": "No folder name provided"}
+
+        query = """
+        MATCH (p:Project)-[:IS_IN]->(f:Folder {name: $folder_name})
+        RETURN p.name AS project_name
+        """
+
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, folder_name=str(folder_name))
+                projects = [dict(record["project_name"]) for record in result]
+                return projects
+        except Exception as e:
+            return {"status": "failure", "error": str(e)}
+
         
     # Allows to add a relationship of ownership betwwen the analyst and a project
     # @params: Owner_initials: Initials of the Lead analyst, project_name: Name of the project the analyst os going to own
