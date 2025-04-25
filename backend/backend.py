@@ -4,7 +4,7 @@ from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
 from crawler import Crawler
-from typing import List, Optional
+from typing import Union,List, Optional
 import logging
 from fastapi.responses import StreamingResponse
 import json
@@ -16,7 +16,7 @@ import requests
 import neo4j.time
 import mdp3
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Union
 import json
 import csv
 import sys
@@ -117,7 +117,7 @@ class FuzzRequest(BaseModel):
     http_method: str = 'GET'
     filter_by_content_length: Optional[str | int] = ''
     proxy: str = ''
-    additional_parameters: Optional[str] = ''
+    additional_param: Optional[str] = ''
     show_results: bool = True  # New parameter for toggling result visibility
 
 # Global fuzzer instance to control across endpoints
@@ -166,15 +166,14 @@ async def resumeFuzzer():
         return {"message": "Fuzzer resumed"}
     return {"message": "No active fuzzer to resume"}
 
-
 # Add BruteForcer request model --- BRUTEFORCER
 class BruteForcerRequest(BaseModel):
     target_url: str
     word_list: Optional[str] = ''
-    hide_status: Optional[str] = ''
-    show_status: Optional[str] = ''
-    filter_by_content_length: Optional[str | int] = ''
-    additional_parameters: Optional[str] = ''
+    hide_status: Union[List[int], str] = []              # allow [404,500] or "404,500"
+    show_status: Union[List[int], str] = []              # same here
+    filter_by_content_length: Optional[Union[int, str]] = None
+    additional_param: Optional[str] = ''
     show_results: bool = True  # New parameter for toggling result visibility
 
 # Global bruteforcer instance
@@ -187,6 +186,8 @@ async def launchBruteForcer(request: BruteForcerRequest):
     brute_forcer = BruteForcer()
     params_dict = request.model_dump()
     logger.info(request)
+    logger.debug(f"BruteForcer parameters: {params_dict}")
+
     
     async def brute_force_stream():
         try:
@@ -194,7 +195,6 @@ async def launchBruteForcer(request: BruteForcerRequest):
                 yield json.dumps(update) + "\n"
         except Exception as e:
             logger.error(f"Error in brute force stream: {e}", exc_info=True)
-    
     
     return StreamingResponse(brute_force_stream(), media_type="application/json")
 
@@ -218,6 +218,32 @@ async def upload_wordlist(file: UploadFile = File(...)):
         logger.error(f"Error uploading wordlist file {str(e)}")
         return {"error !": str(e)}, 500
     
+# control endpoints for the BruteForce
+@app.post("/stop_brute")
+async def stopBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.stop_scan()
+        return {"message": "BruteForce stopping requested"}
+    return {"message": "No active BruteForce to stop"}
+
+@app.post("/pause_brute")
+async def pauseBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.pause_scan()
+        return {"message": "BruteForce paused"}
+    return {"message": "No active BruteForce to pause"}
+
+@app.post("/resume_brute")
+async def resumeBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.resume_scan()
+        return {"message": "BruteForce resumed"}
+    return {"message": "No active BruteForce to resume"}
+
+
 def extract_services_sites(json_paths: list[str],
                            csv_path: str = 'services_sites/services_sites.csv') -> bool:
     # Ensure the folder for the CSV exists
@@ -342,7 +368,7 @@ async def save_userpassword(file: UploadFile = File(None)):
 @app.post("/display_userList")
 async def display_userList():
     usserpassword_list = []
-    for root, dirs, files in os.walk("./user_passwords_uploads"):
+    for root, dirs, files in os.walk("/user_passwords_uploads"):
         for file in files:
             usserpassword_list.append(file)
     return usserpassword_list
@@ -358,15 +384,8 @@ async def display_userpassword(file_path):
                 credentials.append((parts[0], parts[1]))
     return credentials
 
-class FilenameInput(BaseModel):
-    filename: str
-
-@app.post("/delete_userpassword")
-async def delete_userpassword(data: FilenameInput):
-    
-    filename = data.filename
-    print(f"Got filename: {filename}")
-
+@app.post("delete_userpassword")
+async def delete_userpassword(filename):
     for root, dirs, files in os.walk("/user_passwords_uploads"):
         if filename in files:
             file_path = os.path.join(root, filename)
@@ -408,7 +427,7 @@ async def dashboard(initials):
             project["Stamp_Date"] = project["Stamp_Date"].iso_format()
     return {"my_projects": my_projects, "shared_projects": shared_projects}
 
-@app.get("/create_folder/")
+@app.get("/folders/")
 async def get_folders():
     result=pm.get_folders()
     for folders in result:

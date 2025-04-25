@@ -12,9 +12,10 @@
   ];
 
   let bruteForceParams = {
-    target_url: "",
+    target_url: "", 
     word_list: "",
-    show_results: true  // Initialize show_results option
+    additional_param: "",
+    show_results: true
   };
 
   let results = [];
@@ -155,7 +156,11 @@
       const numeric = parseInt(value);
       if (!isNaN(numeric)) bruteForceParams.filter_by_content_length = numeric;
     }
-    //console.log(`Updated ${id} to ${value}`);
+
+    if (id === 'additional_param') {
+    bruteForceParams.additional_param = value;
+    }
+
   }
 
   // API call functions with unified error handling
@@ -834,6 +839,4 @@
   .home-button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
   }
-
-
 </style>
