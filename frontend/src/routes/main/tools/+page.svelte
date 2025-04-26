@@ -16,7 +16,7 @@
     }
 
     function gotoHTTPTester() {
-      window.location.href = "/main/tools/HTTPTester";
+      window.location.href = "/main/tools/HttpTester";
     }
 
     function gotosql() {
