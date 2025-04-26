@@ -18,13 +18,13 @@ import neo4j.time
 import mdp3
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
-import json
 import csv
 import sys
-
 import mysql.connector
+
 from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
+CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("asyncio")
@@ -169,6 +169,82 @@ async def resumeFuzzer():
         fuzzer.resume_scan()
         return {"message": "Fuzzer resumed"}
     return {"message": "No active fuzzer to resume"}
+
+# ==== TREE GRAPH ENDPOINTS START ====
+@app.get("/api/tree-data")
+async def get_tree_data():
+    """Fetch list of URLs with severity for Tree List page."""
+    try:
+        with open(CRAWL_RESULTS_PATH, 'r') as file:
+            data = json.load(file)
+        if not data:
+            return []
+
+        # Example: Return list of dicts with id, url, severity
+        return [{"id": item["id"], "url": item["url"], "severity": item.get("severity", "Info")} for item in data]
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Crawl results not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Endpoint to get Tree Graph structure for Vis.js
+@app.get("/api/tree-graph")
+async def get_tree_graph():
+    try:
+        with open(CRAWL_RESULTS_PATH, 'r') as file:
+            data = json.load(file)
+        if not data:
+            return {"nodes": [], "edges": []}
+
+        nodes = []
+        edges = []
+
+        for item in data:
+            nodes.append({
+                "id": item["id"],
+                "label": item["url"],
+                "color": severity_color(item.get("severity", "Info"))
+            })
+
+            # Simple logic: connect based on slashes in URL
+            url_depth = item["url"].count('/')
+            if url_depth > 2:  # Assuming base URL has http(s)://
+                parent_id = find_parent(data, item)
+                if parent_id:
+                    edges.append({"from": parent_id, "to": item["id"]})
+
+        return {"nodes": nodes, "edges": edges}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Helper to assign colors based on severity
+def severity_color(severity):
+    return {
+        "Info": "#3498db",    # Blue
+        "Low": "#f1c40f",     # Yellow
+        "Medium": "#e67e22",  # Orange
+        "High": "#e74c3c"     # Red
+    }.get(severity, "#95a5a6")  # Default Grey
+
+
+# Helper to find parent node (basic example)
+def find_parent(data, current_item):
+    current_url = current_item["url"]
+    possible_parents = [item for item in data if item["id"] != current_item["id"]]
+    parent = None
+    max_match = 0
+
+    for item in possible_parents:
+        if current_url.startswith(item["url"]) and len(item["url"]) > max_match:
+            parent = item["id"]
+            max_match = len(item["url"])
+
+    return parent
+# ==== TREE GRAPH ENDPOINTS END ====
 
 
 # Add BruteForcer request model --- BRUTEFORCER
