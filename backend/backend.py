@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
+from DB_projects.neo4jDB import Neo4jInteractive
 from crawler import Crawler
 from typing import List, Optional
 import logging
@@ -713,3 +714,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+##
+## TEAM 6 PART
+##
+
+n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+
+#Create new Initials directly into the db.
+#THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
+@app.post("/create_initials/{initials}/")
+async def create_initials(initials:str):
+    result=n4ji.create_Analyst(" ", "analyst", initials) 
+    return {"status": "success", "results": result}
