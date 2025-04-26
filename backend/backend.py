@@ -1,9 +1,8 @@
-from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
+from fastapi import FastAPI, File, UploadFile, Form,  HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
-from DB_projects.neo4jDB import Neo4jInteractive
 from crawler import Crawler
 from typing import List, Optional
 import logging
@@ -21,6 +20,8 @@ from typing import Dict, Optional
 import json
 import csv
 import sys
+from proxy_logic import handle_proxy_request, request_history, response_history
+from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 
 logging.basicConfig(level=logging.DEBUG)
@@ -28,6 +29,13 @@ logger = logging.getLogger("asyncio")
 
 # creates endpoints
 app = FastAPI(title="Routes")
+
+class ProxyRequest(BaseModel):
+    url: str
+    method: str = "GET"
+
+class RawRequest(BaseModel):
+    rawRequest: str
 
 # params for crawler (optionals for optional params,
 # both int | str in case they type into box and then delete input, prevents error and request goes through)
@@ -376,7 +384,54 @@ async def delete_userpassword(data: FilenameInput):
             return True
     print(f"File '{filename}' not found in 'user_passwords_uploads'.")
     return False
+#HTTP_TESTER ENDPOINT
+@app.post("/api/send-http-request")
+async def send_raw_http(req: RawRequest):
+    try:
+        lines = req.rawRequest.strip().split('\n')
+        request_line = lines[0].strip()
+        method, path, _ = request_line.split()
+        host_line = next((line for line in lines if line.lower().startswith("host:")), None)
+        host = host_line.split(":", 1)[1].strip() if host_line else ""
 
+        url = f"http://{host}{path}"
+
+        headers = {}
+        body = None
+        header_section = True
+        for line in lines[1:]:
+            line = line.strip()
+            if header_section:
+                if line == "":
+                    header_section = False
+                    continue
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k.strip()] = v.strip()
+            else:
+                body = body + "\n" + line if body else line
+
+        result = send_http_request(url, method, headers, body)
+        return {
+            "status": result["status_code"],
+            "headers": headers,
+            "body": result["body"]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/proxy-request")
+async def proxy_request(req: ProxyRequest):
+    return handle_proxy_request(req.url, req.method)
+
+@app.get("/proxy-history")
+def get_history():
+    return {
+        "requestHistory": request_history,
+        "responseHistory": response_history
+    }
 
 
 ##
@@ -409,7 +464,7 @@ async def dashboard(initials):
             project["Stamp_Date"] = project["Stamp_Date"].iso_format()
     return {"my_projects": my_projects, "shared_projects": shared_projects}
 
-@app.get("/folders/")
+@app.get("/create_folder/")
 async def get_folders():
     result=pm.get_folders()
     for folders in result:
@@ -472,6 +527,47 @@ async def export_project(projectName: str):
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+@app.post("/submit_results/{result_type}")
+async def submit_results(request: Request, result_type):
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type)
+    except Exception as e:
+        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+
+@app.post("/project_folder/{folder_name}")
+async def get_projects_in_folder(folder_name: str):
+    result = pm.get_projects_in_folder(folder_name)
+    for project in result:
+        if "creation_date" in project and isinstance(project["creation_date"], neo4j.time.DateTime):
+            project["creation_date"] = project["creation_date"].iso_format()
+        if "last_edit_date" in project and isinstance(project["last_edit_date"], neo4j.time.DateTime):
+            project["last_edit_date"] = project["last_edit_date"].iso_format()
+        if "stamp_date" in project and isinstance(project["stamp_date"], neo4j.time.DateTime):
+                    project["stamp_date"] = project["stamp_date"].iso_format()
+    return {"projects": result}
+    
+
+    
+class SQLRequest(BaseModel):
+    target_url: str
+    port: int
+    timeout: int = 5
+    headers: dict = {}
+    enum_level: int = 0
+
+@app.post("/api/sql_injection")
+async def sql_inject(req: SQLRequest):
+    injector = SQLInjectionManager()
+    results = injector.perform_sql_injection(
+        req.target_url,
+        req.port,
+        timeout=req.timeout,
+        headers=req.headers,
+        enum_level=req.enum_level
+    )
+    return results
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
@@ -481,16 +577,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-##
-## TEAM 6 PART
-##
-
-n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
-
-#Create new Initials directly into the db.
-#THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
-@app.post("/create_initials/{initials}/")
-async def create_initials(initials:str):
-    result=n4ji.create_Analyst(" ", "analyst", initials) 
-    return {"status": "success"}
