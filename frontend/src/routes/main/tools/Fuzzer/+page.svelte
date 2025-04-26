@@ -131,7 +131,7 @@
       return;
     }
     
-    const width = 600, height = 400;
+    const width = 400, height = 300;//smaller terminal dimensions test
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     
@@ -458,7 +458,7 @@
   
               // Add to results table and terminal
               results = [...results, update];
-              logOutput += `[${update.response}] ${update.payload}\n`;
+              //logOutput += `[${update.response}] ${update.payload}\n`;
             }
           } catch (error) {
             addToTerminal(`ERROR: ${error.message}`, 'error');

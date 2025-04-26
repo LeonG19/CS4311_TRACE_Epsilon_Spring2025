@@ -179,6 +179,29 @@ async def resumeFuzzer():
         return {"message": "Fuzzer resumed"}
     return {"message": "No active fuzzer to resume"}
 
+#TEST DB FUZZER
+# @app.get("/test/fuzzer-results")
+# async def test_fuzzer_results():
+#     try:
+#         with n4ji.driver.session() as session:
+#             result = session.run("""
+#             MATCH (r:Result {type: "fuzzer"}) 
+#             RETURN count(r) as count
+#             """)
+#             data = result.single()
+#             if data:
+#                 return {
+#                     "count": data["count"],
+#                     "status": "success",
+#                     "message": f"Found {data['count']} fuzzer results in the database"
+#                 }
+#             else:
+#                 return {"count": 0, "status": "no results found"}
+#     except Exception as e:
+#         return {"status": "error", "message": str(e)}
+
+#
+
 # ==== TREE GRAPH ENDPOINTS START ====
 @app.get("/api/tree-data")
 async def get_tree_data():
