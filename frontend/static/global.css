@@ -14,6 +14,15 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Ensure the main container is centered */
 .crawlerConfigPage {
   width: 80%;  /* Adjusted width to give more space */
@@ -135,7 +144,6 @@ span {
   left: 10px;
   width: max-content;
   color: #ffffff;
-  background: #242424;
   border-radius: 10px;
 }
 
