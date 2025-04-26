@@ -2,6 +2,7 @@ import json
 from neo4j import GraphDatabase
 from datetime import datetime
 import ssl
+import uuid
 
 URI="neo4j://941e739f.databases.neo4j.io"
 User="neo4j"
@@ -76,12 +77,12 @@ class Neo4jInteractive:
             session.run(query, name=str(Project_Name), locked_status=locked_bool, Stamp_Date=formatDate, description=str(description), MachineIP=str(MachineIP), Status=str(status).capitalize(), files=[]if list_files=="" else list(list_files), last_edit=formatDate)
             return {"status": "success"}
         
-    def relationship_results(self, project_name, id, type):
+    def relationship_results(self, project_name, run_id):
         if not all([project_name, id]):
             return {"status": "failure", "error":"One or more parameters missing"}
-        query= """MATCH (p:Project {name: $name}), (r:Result {id:$id, type:$type}) MERGE (p)-[:HAS_RESULT]->(r)"""
+        query= """MATCH (p:Project {name: $name}), (s:ScanRun {run_id: $run_id}) MERGE (p)-[:HAS_SCAN]->(s)"""
         with self.driver.session() as session:
-            session.run(query, name=str(project_name), id=int(id), type=str(type))
+            session.run(query, name=str(project_name), run_id=str(run_id))
             return {"status": "success"}
 
 
@@ -112,7 +113,7 @@ class Neo4jInteractive:
      # Allows the Database to receive a JSON and put all the information inside a node called Results
     # @params: json_data: json object, result_type: indicator for which type of result is
     # @returns: json with success or failure status 
-    def process_Response(self, json_data, result_type):
+    def process_Response(self, json_data, result_type, project_name, run_id=None):
         if isinstance(json_data, str):
             try:
                 results = json.loads(json_data)
@@ -124,19 +125,51 @@ class Neo4jInteractive:
             results = [json_data]
         else:
             return {"status": "failure", "error": "Unsupported type of JSON"}
+        
+        
+        if not run_id:
+            run_id = str(uuid.uuid4())
+
         with self.driver.session() as session:
-            for result in results:
-                result["type"] = result_type
+            try:
+                session.execute_write(
+                lambda tx: tx.run(
+                    """
+                    MERGE (s:ScanRun {run_id: $run_id})
+                    SET s.type = $type
+                    WITH s
+                    MATCH (p:Project {name: $project_name})
+                    MERGE (p)-[:HAS_SCAN]->(s)
+                    """,
+                    {"run_id": run_id, "type": result_type, "project_name": project_name}
+                    )
+                )
+                
+                for result in results:
+                    result["type"] = result_type
 
-                fields = ", ".join([f"{key}: ${key}" for key in result])
-                query = f"CREATE (r:Result {{ {fields} }})"
+                    fields = ", ".join([f"{key}: ${key}" for key in result])
+                    query = f"CREATE (r:Result {{ {fields} }})"
 
-                try:
-                    session.execute_write(lambda tx: tx.run(query, result))
-                except Exception as e:
-                    return {
-                        "status": "failure",
-                        "error": f"Failed to insert record: {str(e)}"
+                    try:
+
+                        session.execute_write(lambda tx: tx.run(query, result))
+
+                        session.execute_write(lambda tx: tx.run(
+                            """ MATCH (s:ScanRun {run_id: $run_id}), (r:Result {id: $result_id})
+                            MERGE (s)-[:HAS_RESULT]->(r)""",{"run_id": run_id, "result_id": result["id"]}))
+                        
+                        self.relationship_results(project_name, run_id)
+                    except Exception as e:
+                        return {
+                            "status": "failure",
+                            "error": f"Failed to insert record: {str(e)}"
+                        }
+
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to insert record: {str(e)}"
                     }
 
         return {"status": "success"}
@@ -433,4 +466,3 @@ def is_ip_valid(ip):
             return False
     
     return True
-
