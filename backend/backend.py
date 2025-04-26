@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
+from DB_projects.neo4jDB import Neo4jInteractive
 from crawler import Crawler
 from typing import List, Optional
 import logging
@@ -17,10 +18,10 @@ import neo4j.time
 import mdp3
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
-import json
 import csv
 import sys
-import json
+import mysql.connector
+
 from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
@@ -592,6 +593,63 @@ async def sql_inject(req: SQLRequest):
     )
     return results
 
+import mysql.connector  # Make sure you pip install mysql-connector-python
+from fastapi import HTTPException
+
+class DBEnumerator:
+    def enumerate(self, host, port, username, password):
+        try:
+            conn = mysql.connector.connect(
+                host=host,
+                port=port,
+                user=username,
+                password=password
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT VERSION()")
+            version = cursor.fetchone()[0]
+            cursor.execute("SHOW DATABASES")
+
+            databases = cursor.fetchall()
+            all_tables = []
+            pii_tables = []
+
+            for db in databases:
+                db_name = db[0]
+                cursor.execute(f"USE {db_name}")
+                cursor.execute("SHOW TABLES")
+                tables = cursor.fetchall()
+                for table in tables:
+                    table_name = table[0]
+                    all_tables.append(f"{db_name}.{table_name}")
+                    # PII detection: simple keyword match
+                    if any(keyword in table_name.lower() for keyword in ["user", "password", "email", "credit", "social", "ssn"]):
+                        pii_tables.append(f"{db_name}.{table_name}")
+
+            return {
+                "version": version,
+                "total_tables": len(all_tables),
+                "tables": all_tables,
+                "pii_tables": pii_tables
+            }
+        except mysql.connector.Error as err:
+            raise HTTPException(status_code=500, detail=f"MySQL Error: {err}")
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+                ''
+
+@app.post("/api/db_enum")
+async def db_enum_endpoint(request: Request):
+    body = await request.json()
+    host = body.get('host')
+    port = body.get('port')
+    username = body.get('username')
+    password = body.get('password')
+
+    return db_enum.enumerate(host, port, username, password)
+
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
     CORSMiddleware,
@@ -600,3 +658,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+##
+## TEAM 6 PART
+##
+
+n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+
+#Create new Initials directly into the db.
+#THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
+@app.post("/create_initials/{initials}/")
+async def create_initials(initials:str):
+    result=n4ji.create_Analyst(" ", "analyst", initials) 
+    return {"status": "success"}
