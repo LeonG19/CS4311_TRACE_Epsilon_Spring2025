@@ -20,6 +20,8 @@ from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
 import csv
 import sys
+from proxy_logic import handle_proxy_request, request_history, response_history
+from sqlInjectorManager import SQLInjectionManager
 import mysql.connector
 
 from sqlInjectorManager import SQLInjectionManager
@@ -31,6 +33,13 @@ logger = logging.getLogger("asyncio")
 
 # creates endpoints
 app = FastAPI(title="Routes")
+
+class ProxyRequest(BaseModel):
+    url: str
+    method: str = "GET"
+
+class RawRequest(BaseModel):
+    rawRequest: str
 
 # params for crawler (optionals for optional params,
 # both int | str in case they type into box and then delete input, prevents error and request goes through)
@@ -455,7 +464,54 @@ async def delete_userpassword(data: FilenameInput):
             return True
     print(f"File '{filename}' not found in 'user_passwords_uploads'.")
     return False
+#HTTP_TESTER ENDPOINT
+@app.post("/api/send-http-request")
+async def send_raw_http(req: RawRequest):
+    try:
+        lines = req.rawRequest.strip().split('\n')
+        request_line = lines[0].strip()
+        method, path, _ = request_line.split()
+        host_line = next((line for line in lines if line.lower().startswith("host:")), None)
+        host = host_line.split(":", 1)[1].strip() if host_line else ""
 
+        url = f"http://{host}{path}"
+
+        headers = {}
+        body = None
+        header_section = True
+        for line in lines[1:]:
+            line = line.strip()
+            if header_section:
+                if line == "":
+                    header_section = False
+                    continue
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k.strip()] = v.strip()
+            else:
+                body = body + "\n" + line if body else line
+
+        result = send_http_request(url, method, headers, body)
+        return {
+            "status": result["status_code"],
+            "headers": headers,
+            "body": result["body"]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/proxy-request")
+async def proxy_request(req: ProxyRequest):
+    return handle_proxy_request(req.url, req.method)
+
+@app.get("/proxy-history")
+def get_history():
+    return {
+        "requestHistory": request_history,
+        "responseHistory": response_history
+    }
 
 
 ##
@@ -670,4 +726,4 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 @app.post("/create_initials/{initials}/")
 async def create_initials(initials:str):
     result=n4ji.create_Analyst(" ", "analyst", initials) 
-    return {"status": "success"}
+    return {"status": "success", "results": result}
