@@ -23,6 +23,8 @@ import sys
 from proxy_logic import handle_proxy_request, request_history, response_history
 from sqlInjectorManager import SQLInjectionManager
 import mysql.connector
+import asyncio
+import uuid
 
 from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
@@ -52,25 +54,36 @@ class CrawlRequest(BaseModel):
     delay: Optional[str | int] = ''
     proxy: str = ''
 
-crawler = None
+jobs = {}  # used for persistance if we go back to the tools menus
+
 '''
  for now basically just launches the crawl based on the form submitted by the user
 '''
 @app.post("/crawler")
 async def launchCrawl(request: CrawlRequest):
-    global crawler
+    global jobs
+    job_id = str(uuid.uuid4())
     crawler = Crawler()
+    jobs[job_id] = {
+        'crawler': crawler,
+        'status': 'running',
+        'results': []
+    }
     params_dict = request.model_dump()
     logger.info(request)
-    
-    async def crawl_stream():
+    # Start the crawl in the background
+    async def crawl_task():
         try:
             async for update in crawler.start_crawl(params_dict):
-                yield json.dumps(update) + "\n"
-        except Exception  as e:
+                jobs[job_id]['results'].append(update)
+            jobs[job_id]['status'] = 'finished'
+        except Exception as e:
             logger.error(f"Error in crawl stream: {e}", exc_info=True)
-    
-    return StreamingResponse(crawl_stream(), media_type="application/json")
+            jobs[job_id]['status'] = 'error'
+    # Schedule the crawl task
+    asyncio.create_task(crawl_task())
+    # Return the job_id immediately
+    return {"job_id": job_id}
 
 @app.post("/validate_url")
 async def validate_url(request: CrawlRequest):
@@ -96,29 +109,66 @@ async def validate_url(request: CrawlRequest):
 
 # function that stops the execution of crawler when button is clicked
 @app.post("/stop_crawler")
-async def stopCrawler():
-    global crawler
-    if crawler:
-        crawler.stop_crawl()
-        crawler = Crawler()
-        return {"message" : "Crawl stopping requested"}
-    return {"message" : "nothing to stop"}
+async def stopCrawler(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].stop_crawl()
+        job['status'] = 'finished'
+        return {"status": "finished", "results": job['results']}
+    return {"message": "nothing to stop"}
 
 @app.post("/pause_crawler")
-async def pauseCrawler():
-    global crawler
-    if crawler:
-        crawler.pause_crawl()
-        return {"message" :" Crawler Paused"}
+async def pauseCrawler(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].pause_crawl()
+        return {"message": "Crawler Paused"}
     return {"message": "nothing to pause"}
 
 @app.post("/resume_crawler")
-async def resumeCrawl():
-    global crawler
-    if crawler:
-        crawler.resume_crawl()        
-        return {"message" :" Crawler Resumed"}
+async def resumeCrawl(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].resume_crawl()
+        return {"message": "Crawler Resumed"}
     return {"message": "nothing to resume"}
+
+#continuous check of current job to see if the test is ongoing (might be useful for two computers at once)
+@app.get("/crawler_status")
+async def get_crawler_status(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return {"status": "not_found", "results": []}
+    crawler = job['crawler']
+    if getattr(crawler, "is_complete", True):
+        return {"status": "finished", "results": job['results']}
+    else:
+        return {"status": "running", "results": job['results']}
+
+# ai helped with this, used for the continuous streaming of results even wehn away from page and rest when back into the page
+@app.get("/crawler_stream")
+async def get_crawler_stream(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return StreamingResponse((line for line in [json.dumps({"error": "No such job"}) + "\n"]), media_type="application/json")
+    crawler = job['crawler']
+    async def stream_updates():
+        try:
+            current_count = 0
+            while True:
+                while getattr(crawler, "pause_flag", False):
+                    await asyncio.sleep(0.5)
+                if len(job['results']) > current_count:
+                    for i in range(current_count, len(job['results'])):
+                        yield json.dumps(job['results'][i]) + "\n"
+                    current_count = len(job['results'])
+                if getattr(crawler, "is_complete", True):
+                    yield json.dumps({"crawl_complete": True}) + "\n"
+                    break
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            yield json.dumps({"error": str(e)}) + "\n"
+    return StreamingResponse(stream_updates(), media_type="application/json")
 
 # Add fuzzer request model --- FUZZER
 class FuzzRequest(BaseModel):

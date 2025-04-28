@@ -23,6 +23,8 @@ class Crawler:
         self.total_pages = 0  # Track total pages to crawl
         self.stop_flag = False
         self.pause_flag = False
+        self.is_complete = False  # Add is_complete flag
+        self.next_id = 0  # Monotonically increasing unique ID for each result
         # here use the user agent string for requests
     #fine for backend
     def fetch_page(self, url): #fetching html data
@@ -71,7 +73,7 @@ class Crawler:
         title = parsed_html.title.string if parsed_html and parsed_html.title else "No Title"
 
         crawled_urls_entry = {
-            'id': len(self.crawled_urls),
+            'id': self.next_id,  # Use unique, incrementing ID
             'url': url,
             'title': title,
             'word_count': word_count,
@@ -80,8 +82,7 @@ class Crawler:
             'error': error, # Adding error field (True if error occurred, False otherwise), 
             'severity': severity
         }
-        # url_info = CrawledURLInfo(url, title, word_count, char_count, link_count, words)
-        # return url_info
+        self.next_id += 1  # Increment for next entry
         self.crawled_urls.append(crawled_urls_entry)
 
     def save_json(self):
@@ -127,9 +128,9 @@ class Crawler:
             url = queue.popleft()
 
             #allows pause and stop
-            await asyncio.sleep(0.5) 
+            await asyncio.sleep(0.1) 
             while self.pause_flag:
-                await asyncio.sleep(0.5) 
+                await asyncio.sleep(0.1) 
 
             #counts the depth of the current path and skips url if too deep
             if self.depth != '' and url != self.start_url:
@@ -145,22 +146,29 @@ class Crawler:
             error_occurred, response = self.fetch_page(url)
             status_severity = self.calculate_severity(response["status_code"])
             print(status_severity, response["status_code"])
+            await asyncio.sleep(0.1)
 
             if not error_occurred:
                 # response = requests.get(url, timeout=5, headers={"User-Agent": self.user_agent_string})
                 if response["status_code"] == 200:
                     html = response["body"] # Use the HTML content from the successful response
                     parsed_html = BeautifulSoup(html, "html.parser")
+                    await asyncio.sleep(0.1)
                     # sets up crawled urls info
                     links = self.retreieve_links_to_crawl(parsed_html, url)
                     self.retreive_url_info(parsed_html, url, links, status_severity, error=False)  # No error occurred 
                     self.tree_structure[url] = list(links)  # Store links in the tree structure
                     queue.extend(links)  # Add found links to the queue
                     filtered_requests += 1  # Increment filtered requests for successful responses
+                    await asyncio.sleep(0.1)
                 else:
                     self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
+                    self.tree_structure[url] = list(links)
+                    await asyncio.sleep(0.1)
             else:
                 self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
+                self.tree_structure[url] = list(links)
+                await asyncio.sleep(0.1)
 
             processed_requests += 1  # Increment processed requests
 
@@ -185,6 +193,7 @@ class Crawler:
         self.crawl_time = end - start
         self.requests_per_sec = round(((len(self.crawled_urls)) / self.crawl_time), 2)
         self.save_json()
+        self.is_complete = True  # Set is_complete to True when done
 
     def calculate_severity(self, status):
 
@@ -201,6 +210,7 @@ class Crawler:
     
     def stop_crawl(self):
         self.stop_flag = True
+        self.is_complete = True
     def pause_crawl(self):
         self.pause_flag = True
     def resume_crawl(self):
