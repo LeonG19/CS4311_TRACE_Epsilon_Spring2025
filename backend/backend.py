@@ -138,12 +138,12 @@ async def resumeCrawl(job_id: str):
 async def get_crawler_status(job_id: str):
     job = jobs.get(job_id)
     if not job:
-        return {"status": "not_found", "results": []}
+        return {"status": "not_found", "results": [], "total_pages": 0}
     crawler = job['crawler']
     if getattr(crawler, "is_complete", True):
-        return {"status": "finished", "results": job['results']}
+        return {"status": "finished", "results": job['results'], "total_pages": crawler.total_pages}
     else:
-        return {"status": "running", "results": job['results']}
+        return {"status": "running", "results": job['results'], "total_pages": crawler.total_pages}
 
 # ai helped with this, used for the continuous streaming of results even wehn away from page and rest when back into the page
 @app.get("/crawler_stream")

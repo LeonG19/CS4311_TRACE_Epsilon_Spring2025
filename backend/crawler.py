@@ -223,7 +223,7 @@ class Crawler:
         self.depth = config_depth if config_depth == '' else int(config_depth)
         
         config_max_pages = crawler_params['max_pages']
-        self.max_pages = config_max_pages if config_max_pages == '' else int(config_max_pages)
+        self.max_pages = int(config_max_pages) if config_max_pages and config_max_pages.isdigit() else float('inf')
 
         self.user_agent_string = crawler_params['user_agent']
         

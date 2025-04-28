@@ -26,7 +26,7 @@
   let crawling = false;
   let displayingResults = false;
 
-  let totalPages = 0;
+  let totalPages = crawlerParams.max_pages || 0;
   let crawledPages = 0;
 
   let startTime = null;
@@ -127,6 +127,7 @@
       if (response.ok) {
         const status = await response.json();
         crawlResult = status.results || [];
+        crawledPages = crawlResult.length;
         processedRequests = crawlResult.length;
         filteredRequests = crawlResult.filter((item) => !item.error).length;
         if (status.status === 'finished') {
@@ -394,6 +395,8 @@ onMount(async () => {
       //running page if running
       if (status.status === "running") {
         crawlResult = status.results;
+        crawledPages = crawlResult.length;
+        totalPages = status.total_pages || 0;
         processedRequests = crawlResult.length;
         filteredRequests = crawlResult.filter((item) => !item.error).length;
         acceptingParams = false;
