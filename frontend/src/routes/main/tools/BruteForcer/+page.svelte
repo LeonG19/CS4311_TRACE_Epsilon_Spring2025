@@ -31,7 +31,7 @@
   let visibleResults=[];
   let popoutWindow;
   let terminalOutput = []; 
-
+  let formattedLine;
 
   // Track progress
   let progress = 0;
@@ -469,18 +469,18 @@
   }
 
   function addToTerminal(result, type = '') {
-    const id = String(result.id).padStart(2, '0');
-    const formattedLine = `${id} : ${result.response} ${result.lines} L ${result.words} W ${result.chars} CH `;
-    logOutput += `${formattedLine}\n`;
-
+    if (typeof result === 'string') {
+      // just log the message
+      formattedLine = result;
+    } else {
+      // assume it's a full scan-result object
+      const id   = String(result.id || '').padStart(2, '0');
+      formattedLine = `${id} : ${result.response} ${result.lines} L ${result.words} W ${result.chars} CH`;
+    }
+    logOutput += formattedLine + '\n';
     terminalOutput.push({ text: formattedLine, type });
-    
     if (popoutWindow && !popoutWindow.closed) {
-      try {
-        popoutWindow.addTerminalLine(formattedLine, type);
-      } catch (e) {
-        console.error('Error updating terminal:', e);
-      }
+      popoutWindow.addTerminalLine(formattedLine, type);
     }
   }
 </script>

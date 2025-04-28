@@ -250,7 +250,7 @@ class BruteForcer:
         fl = scan_params.get("filter_by_content_length")
         if isinstance(fl, int):
             # exact match
-            self.content_length_filter = (fl, fl +100)
+            self.content_length_filter = (fl, float("inf"))
         elif isinstance(fl, str) and fl.strip():
             mn, mx = None, None
             for part in fl.split(","):
