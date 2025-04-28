@@ -172,7 +172,6 @@
       return;
     }
     paramsToCrawling();
-    startTimer();
     crawledPages = 0;
     totalPages = crawlerParams.max_pages || 0;
     activeController = new AbortController();
@@ -196,13 +195,13 @@
       if (isBrowser()) {
         localStorage.setItem('crawler_job_id', jobId);
       }
+      
       startPolling();
     } catch (error) {
       console.error("Error starting crawler:", error);
       alert("Failed to start crawler. Please try again.");
       resultsToParams();
     }
-    stopTimer();
   }
 
   // Update stopCrawler, pauseCrawler, resumeCrawler to stop polling
@@ -446,6 +445,13 @@ onMount(async () => {
   }
 });
 
+$: if (crawling) {
+  startTimer();
+}
+
+$: if (displayingResults) {
+  stopTimer();
+}
 </script>
 
 <div class="crawlerConfigPage">
