@@ -15,6 +15,7 @@ import shutil
 import requests
 import neo4j.time
 import mdp3
+from fastapi.responses import JSONResponse
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
 import json
@@ -512,7 +513,7 @@ async def sql_inject(req: SQLRequest):
         headers=req.headers,
         enum_level=req.enum_level
     )
-    return results
+    return JSONResponse(content=results)
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
