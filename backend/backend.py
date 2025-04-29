@@ -23,6 +23,7 @@ import sys
 from proxy_logic import handle_proxy_request, request_history, response_history
 from sqlInjectorManager import SQLInjectionManager
 import mysql.connector
+from db_enumerator import DBEnumerator
 
 from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
@@ -697,7 +698,10 @@ class DBEnumerator:
                 conn.close()
                 ''
 
-@app.post("/api/db_enum")
+                # After the DBEnumerator class definition or import
+db_enumerator = DBEnumerator()
+
+@app.post("/api/db_enumerator")
 async def db_enum_endpoint(request: Request):
     body = await request.json()
     host = body.get('host')
@@ -705,7 +709,7 @@ async def db_enum_endpoint(request: Request):
     username = body.get('username')
     password = body.get('password')
 
-    return db_enum.enumerate(host, port, username, password)
+    return db_enumerator.enumerate(host, port, username, password)
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
