@@ -609,14 +609,12 @@ async def export_project(projectName: str):
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 @app.post("/submit_results/{result_type}/{project_name}")
-async def submit_results(result_type, project_name , file: UploadFile=File(...)):
+async def submit_results(result_type, project_name , request: Request):
     try:
-        test_data = await file.read()
-
-        test_data=json.loads(test_data)
+        test_data = await request.json()
         pm.submit_results(test_data, result_type, project_name)
     except Exception as e:
-        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
 
 @app.post("/submit_txt_results/{result_type}/{project_name}")
 async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
