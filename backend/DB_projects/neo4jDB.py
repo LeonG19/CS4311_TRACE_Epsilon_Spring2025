@@ -180,17 +180,22 @@ class Neo4jInteractive:
 
         return {"status": "success"}
     
-    def get_scans_perProject(self, project_name):
-        query= """MATCH ({name:{project_name}})-[:HAS_SCAN]->(s) RETURN s"""
+    def get_all_results_by_project(self, project_name):
+        query = """
+        MATCH (p {name: $project_name})
+        WHERE EXISTS {
+        MATCH (p)-[:HAS_SCAN]->(sc:ScanRun)
+        WHERE toLower(sc.type) = 'crawler'
+        }
+        MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        MATCH (s)-[:HAS_RESULT]->(r)
+        RETURN r
+        """
         with self.driver.session() as session:
-            result=session.run(query, project_name=project_name)
-            return [dict(record["s"]) for record in result]
-    
-    def get_results_perScan(self, run_id):
-        query= """MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r) RETURN r"""
-        with self.driver.session() as session:
-            result=session.run(query, run_id=run_id)
+            result = session.run(query, project_name=project_name)
             return [dict(record["r"]) for record in result]
+
     
 
     def export_project(self, project_name):

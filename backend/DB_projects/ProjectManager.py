@@ -116,11 +116,9 @@ class ProjectManager:
     def get_projects_in_folder(self, folder_name):
         return self.neo4j.get_projects_in_folder(folder_name)
     
-    def get_scans_per_project(self, project_name):
-        return self.neo4j.get_scans_perProject(project_name)
+    def get_all_scans(self, project_name):
+        return self.neo4j.get_all_results_by_project(project_name)
     
-    def get_results_per_scan(self, scan_id):
-        return self.neo4j.get_results_perScan(scan_id)
 
     #doesnt work anymore
     #def get_deleted_projects(self):

@@ -584,13 +584,10 @@ async def create_project(project_name: str = Form(...),
     result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
     return {"status": "success"}
 
-@app.get("/getScans/{projectName}")
+@app.get("/getResult/{projectName}")
 async def get_scans(projectName: str):
-    return pm.get_scans_per_project(projectName)
+    return pm.get_all_scans(projectName)
 
-@app.get("getResults/{scan_id}")
-async def get_results(scan_id: str):
-    return pm.get_results(scan_id)
 
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
