@@ -172,6 +172,7 @@
   
     // Placeholder for Run Scan
     async function runScan(projectName) {
+      sessionStorage.setItem('name', projectName);
       goto('main/tools/');
       console.log(`Running scan for project: ${projectName}`);
       // Implement API call if needed

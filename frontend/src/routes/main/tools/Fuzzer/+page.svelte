@@ -1,5 +1,7 @@
 <script>
   import { preventDefault } from "svelte/legacy";
+  import {onMount} from "svelte";
+  
 
   // Input conf
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", required: true };
@@ -13,6 +15,7 @@
     { id: "proxy", label: "Proxy", type: "text", example: "http://proxy:port", required: false },
     { id: "additional_parameters", label: "Additional Parameters", type: "text", example: "NULL", required: false }
   ];
+  
 
   // State variables
   let fuzzerParams = { target_url: "", word_list: "", show_results: true };
@@ -25,6 +28,7 @@
   let activeController = null;
   let popoutWindow = null;
   let terminalOutput = [];
+  let projectName = "";
   
   // Progress tracking
   let progress = 0;
@@ -42,6 +46,11 @@
   
   // Sorting configuration
   let sortConfig = { column: "", direction: 'asc' };
+
+  onMount(async()=>{
+    projectName= sessionStorage.getItem('name');
+    console.log("Project Name:", projectName);
+  })
 
   // Navigation functions
   function goBack() { window.location.href = "/main/tools"; }
