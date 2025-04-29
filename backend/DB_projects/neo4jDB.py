@@ -147,6 +147,8 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
+                    if "error" in result and isinstance(result["error"], str):
+                        result["error"] = result["error"].lower() == "true"
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
                     query = f"CREATE (r:Result {{ {fields} }})"

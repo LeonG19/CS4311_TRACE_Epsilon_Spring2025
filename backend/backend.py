@@ -610,6 +610,8 @@ async def export_project(projectName: str):
     
 @app.post("/submit_results/{result_type}/{project_name}")
 async def submit_results(result_type, project_name , request: Request):
+    if not [result_type,project_name]:
+        return {"status": "failure", "error": "Missing result_type or project_name"}
     try:
         test_data = await request.json()
         pm.submit_results(test_data, result_type, project_name)
