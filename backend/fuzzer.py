@@ -5,6 +5,8 @@ import json
 from collections import deque
 import logging
 import os
+import asyncio
+import uuid# need for db
 
 # Configure  fuzzer logging
 logging.basicConfig(level=logging.INFO)
@@ -22,13 +24,19 @@ class Fuzzer:
         self.network_proxy = ''
         self.custom_params = {}
         self.display_results_live = False
-
+        self.project_name = None
+        
         # Runtime data
         self.total_scan_time = 0.0
         self.rate_of_requests = 0.0
         self.scan_report = []
         self.report_file = output_filename
         self.number_of_payloads = 0
+        self.is_running = True
+        self.is_paused = False
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
 
     def parse_auth_cookies(self, cookie_string):#parsing  cookie string in dictionary
         if not cookie_string:
@@ -122,22 +130,96 @@ class Fuzzer:
 
     def save_report_to_json(self):#Save results to JSON file for now . might have to be CSV
         try:
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(self.report_file), exist_ok=True)
+            
             with open(self.report_file, 'w') as json_file:
                 json.dump(self.scan_report, json_file, indent=4)
+                
+            scan_logger.info(f"Successfully saved results to {self.report_file}")
+            return True
         except Exception as e:
-            scan_logger.error(f"Error saving  as JSON file {e}")
+            scan_logger.error(f"Error saving as JSON file: {e}")
+            return False
+            
+    def stop_scan(self):
+        self.is_running = False
+        scan_logger.info("Scan stopping requested")
+
+    def pause_scan(self):
+        self.is_paused = True
+        scan_logger.info("Scan paused")
+
+    def resume_scan(self):
+        self.is_paused = False
+        scan_logger.info("Scan resumed")
+        
+    async def submit_to_database(self):#send to db
+        if not self.project_name:
+            scan_logger.warning("No project name ")
+            return False
+            
+        try:
+            # Preparget the data type for submission to the project database
+            for entry in self.scan_report:
+                if 'type' not in entry:
+                    entry['type'] = 'fuzzer'
+                    
+            # Submit data to database endpoint
+            api_url = f"/submit_results/fuzzer/{self.project_name}"
+            
+            headers = {'Content-Type': 'application/json'}
+            
+            try:
+                response = requests.post(
+                    api_url,
+                    json=self.scan_report,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    scan_logger.info(f"Success: {self.project_name}")
+                    return True
+                else:
+                    scan_logger.error(f"Failed: {response.status_code}")
+                    scan_logger.error(f"Response: {response.text}")
+                    return False
+                    
+            except Exception as e:
+                scan_logger.error(f"Error: {e}")
+                return False
+                
+        except Exception as e:
+            scan_logger.error(f"Error {e}")
+            return False
 
     async def run_scan(self, scan_parameters):#start fuzzer with user inputs params
         self.configure_scan_parameters(scan_parameters)
         if not self.payloads:# if empty this will be default 
             self.payloads = ['test', 'admin', 'password', '123456']
         self.number_of_payloads = len(self.payloads)
+        self.is_running = True
+        self.is_paused = False
+        
+        # Get project name from parameters if available
+        self.project_name = scan_parameters.get('project_name')
 
         start = time.time()
         processed_requests = 0
         filtered_requests = 0
 
         for i, payload in enumerate(self.payloads):
+            # Check if scan should stop
+            if not self.is_running:
+                scan_logger.info("Scan stopped by user")
+                break
+                
+            # Check if scan is paused
+            while self.is_paused:
+                await asyncio.sleep(0.5)  # Sleep while paused
+                if not self.is_running:  # Allow stopping while paused
+                    break
+                    
             result = self.send_request(self.scan_target, payload, self.request_method)
             processed_requests += 1
 
@@ -149,7 +231,8 @@ class Fuzzer:
                 'chars': result['chars'],
                 'payload': payload,
                 'length': result['length'],
-                'error': result['error']
+                'error': result['error'],
+                'url': self.scan_target  # Add URL for database context
             }
 
             if self.display_fuzzer_results(result):
@@ -179,10 +262,32 @@ class Fuzzer:
         end = time.time()
         self.total_scan_time = end - start
         self.rate_of_requests = round(processed_requests / self.total_scan_time, 2) if self.total_scan_time > 0 else 0
-        self.save_report_to_json()
+        
+        # Save results to JSON file
+        saved = self.save_report_to_json()
+        if saved:
+            scan_logger.info(f"Scan completed in {self.total_scan_time:.2f} seconds. Results saved to {self.report_file}")
+            
+            # If project name is provided, submit to database
+            if self.project_name:
+                try:
+                    db_success = await self.submit_to_database()
+                    if db_success:
+                        yield {"status": "success", "message": f"Results submitted to project: {self.project_name}"}
+                    else:
+                        yield {"status": "warning", "message": "Failed to submit results to database"}
+                except Exception as e:
+                    scan_logger.error(f"Error submitting to database: {e}")
+                    yield {"status": "error", "message": f"Database error: {str(e)}"}
+        else:
+            scan_logger.error("Failed to save scan results")
+            yield {"status": "error", "message": "Failed to save scan results"}
 
     def configure_scan_parameters(self, scan_params):
         self.scan_target = scan_params.get('target_url', '')
+        
+        # Get project name if available
+        self.project_name = scan_params.get('project_name')
 
         # Handling word list possibilities - file path, list of strings, or comma-separated string
         if 'word_list' in scan_params and scan_params['word_list']:

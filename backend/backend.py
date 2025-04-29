@@ -131,7 +131,8 @@ class FuzzRequest(BaseModel):
     filter_by_content_length: Optional[str | int] = ''
     proxy: str = ''
     additional_parameters: Optional[str] = ''
-    show_results: bool = True  # New parameter for toggling result visibility
+    show_results: bool = True  # parameter for toggling result visibility
+    project_name: Optional[str] = None  # database project name
 
 # Global fuzzer instance to control across endpoints
 fuzzer = None
@@ -149,7 +150,7 @@ async def launchFuzz(request: FuzzRequest):
             async for update in fuzzer.run_scan(params_dict):
                 yield json.dumps(update) + "\n"
         except Exception as e:
-            logger.error(f"Error in fuzz stream: {e}", exc_info=True)
+            logger.error(f"Error: {e}", exc_info=True)
     
     
     return StreamingResponse(fuzz_stream(), media_type="application/json")
@@ -584,6 +585,14 @@ async def create_project(project_name: str = Form(...),
     result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
     return {"status": "success"}
 
+@app.get("/getScans/{projectName}")
+async def get_scans(projectName: str):
+    return pm.get_scans_per_project(projectName)
+
+@app.get("getResults/{scan_id}")
+async def get_results(scan_id: str):
+    return pm.get_results(scan_id)
+
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
     result= pm.check_login(initials)
@@ -608,12 +617,29 @@ async def export_project(projectName: str):
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
-@app.post("/submit_results/{result_type}")
-async def submit_results(result_type, file: UploadFile=File(...)):
+@app.post("/submit_results/{result_type}/{project_name}")
+async def submit_results(result_type, project_name , request: Request):
+    if not [result_type,project_name]:
+        return {"status": "failure", "error": "Missing result_type or project_name"}
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type, project_name)
+    except Exception as e:
+        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
+
+@app.post("/submit_txt_results/{result_type}/{project_name}")
+async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
     try:
         test_data = await file.read()
-        test_data=json.loads(test_data)
-        pm.submit_results(test_data, result_type)
+        test_data = test_data.decode("utf-8")
+        lines= test_data.strip().splitlines()
+        results = []
+        header= lines[0].split(",")
+        for line in lines[1:]:
+            values = line.split(",",1)
+            result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
+            results.append(result)
+        pm.submit_results(results, result_type, project_name)    
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
 
@@ -724,13 +750,7 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 
 #Create new Initials directly into the db.
 #THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
-@app.post("/create_initials/{initials}/{type}")
-async def create_initials(initials:str, type:int):
-    role="Analyst"
-    
-    if type == 1:
-        role = "Lead"
-    
-    result=n4ji.create_Analyst(" ", role, initials) 
-    
-    return result
+@app.post("/create_initials/{initials}/")
+async def create_initials(initials:str):
+    result=n4ji.create_Analyst(" ", "analyst", initials) 
+    return {"status": "success", "results": result}
