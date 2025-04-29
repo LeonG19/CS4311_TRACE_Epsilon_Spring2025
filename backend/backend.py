@@ -338,6 +338,48 @@ class AIParams(BaseModel):
     params: Dict[str, str | bool | int] = Field(default_factory=dict)
 
 
+
+def extract_services_sites(json_paths: list[str],
+                           csv_path: str = 'services_sites/services_sites.csv') -> bool:
+    # Ensure the folder for the CSV exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    valid_data = []
+    at_least_one_valid = False
+
+    # Check each JSON path
+    for idx, path in enumerate(json_paths):
+        if os.path.isfile(path):
+            at_least_one_valid = True
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for entry in data:
+                        valid_data.append((entry.get('id'), entry.get('url')))
+            except Exception as e:
+                print(f"Error reading {path}: {e}")
+                continue
+        else:
+            if idx == 0:
+                # First JSON is required (crawler)
+                print("Crawler JSON path is invalid or missing.")
+                return False
+
+    if not at_least_one_valid:
+        print("No valid JSON files provided.")
+        return False
+
+    try:
+        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'website'])
+            writer.writerows(valid_data)
+        return True  # Success
+    except Exception as e:
+        print(f"Unexpected error while writing CSV: {e}")
+        return False
+
+
 @app.post("/generate-credentials")
 async def generate_credentials_endpoint(file: UploadFile = File(None), data: str = Form(...)):
     #logging.info(f"Received credential generation request: {req}")
