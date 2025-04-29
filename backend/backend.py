@@ -724,7 +724,13 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 
 #Create new Initials directly into the db.
 #THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
-@app.post("/create_initials/{initials}/")
-async def create_initials(initials:str):
-    result=n4ji.create_Analyst(" ", "analyst", initials) 
-    return {"status": "success", "results": result}
+@app.post("/create_initials/{initials}/{type}")
+async def create_initials(initials:str, type:int):
+    role="Analyst"
+    
+    if type == 1:
+        role = "Lead"
+    
+    result=n4ji.create_Analyst(" ", role, initials) 
+    
+    return result
