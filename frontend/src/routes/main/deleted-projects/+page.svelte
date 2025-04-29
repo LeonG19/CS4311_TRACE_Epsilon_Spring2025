@@ -60,7 +60,7 @@
   // Function to send the specific test data
   async function sendTestData() {
     const jsonData = {
-      "id": 2000,
+      "id": 10101,
       "url": "https://discord.com",
       "title": "Discord - Group Chat That\u00e2\u0080\u0099s All Fun & Games",
       "word_count": 376,
@@ -70,7 +70,7 @@
     };
 
     try {
-      const response = await fetch(`http://localhost:8000/submit_results/crawler`, {
+      const response = await fetch(`http://localhost:8000/submit_results/Fuzzer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
