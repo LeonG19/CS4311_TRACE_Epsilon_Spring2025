@@ -326,6 +326,8 @@ async def launchBruteForcer(request: BruteForcerRequest):
     brute_forcer = BruteForcer()
     params_dict = request.model_dump()
     logger.info(request)
+    logger.debug(f"BruteForcer parameters: {params_dict}")
+
     
     async def brute_force_stream():
         try:
@@ -333,7 +335,6 @@ async def launchBruteForcer(request: BruteForcerRequest):
                 yield json.dumps(update) + "\n"
         except Exception as e:
             logger.error(f"Error in brute force stream: {e}", exc_info=True)
-    
     
     return StreamingResponse(brute_force_stream(), media_type="application/json")
 
@@ -357,46 +358,31 @@ async def upload_wordlist(file: UploadFile = File(...)):
         logger.error(f"Error uploading wordlist file {str(e)}")
         return {"error !": str(e)}, 500
     
-def extract_services_sites(json_paths: list[str],
-                           csv_path: str = 'services_sites/services_sites.csv') -> bool:
-    # Ensure the folder for the CSV exists
-    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+# control endpoints for the BruteForce
+@app.post("/stop_brute")
+async def stopBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.stop_scan()
+        return {"message": "BruteForce stopping requested"}
+    return {"message": "No active BruteForce to stop"}
 
-    valid_data = []
-    at_least_one_valid = False
+@app.post("/pause_brute")
+async def pauseBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.pause_scan()
+        return {"message": "BruteForce paused"}
+    return {"message": "No active BruteForce to pause"}
 
-    # Check each JSON path
-    for idx, path in enumerate(json_paths):
-        if os.path.isfile(path):
-            at_least_one_valid = True
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for entry in data:
-                        valid_data.append((entry.get('id'), entry.get('url')))
-            except Exception as e:
-                print(f"Error reading {path}: {e}")
-                continue
-        else:
-            if idx == 0:
-                # First JSON is required (crawler)
-                print("Crawler JSON path is invalid or missing.")
-                return False
+@app.post("/resume_brute")
+async def resumeBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.resume_scan()
+        return {"message": "BruteForce resumed"}
+    return {"message": "No active BruteForce to resume"}
 
-    if not at_least_one_valid:
-        print("No valid JSON files provided.")
-        return False
-
-    try:
-        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['id', 'website'])
-            writer.writerows(valid_data)
-        return True  # Success
-    except Exception as e:
-        print(f"Unexpected error while writing CSV: {e}")
-        return False
-  
 
 class AIParams(BaseModel):
     params: Dict[str, str | bool | int] = Field(default_factory=dict)
