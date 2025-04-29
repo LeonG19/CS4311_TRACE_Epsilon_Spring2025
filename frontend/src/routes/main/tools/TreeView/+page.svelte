@@ -6,16 +6,15 @@
   let isLoading = true;
   let error = '';
 
-  // Helper to format URL as [HOSTNAME]\n[PATH]
   function formatUrlLabel(url) {
-      try {
-          const parsedUrl = new URL(url);
-          const hostname = parsedUrl.hostname;
-          const pathname = parsedUrl.pathname || '/';
-          return `${hostname}\n${pathname}`;
-      } catch {
-          return url;
-      }
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname;
+      const pathname = parsedUrl.pathname || '/';
+      return `${hostname}\n${pathname}`;
+    } catch {
+      return url;
+    }
   }
 
   onMount(async () => {
@@ -28,10 +27,10 @@
 
       data.nodes.forEach(node => {
         elements.push({
-          data: { 
-            id: String(node.id), 
-            label: formatUrlLabel(node.label), 
-            severity: node.color 
+          data: {
+            id: String(node.id),
+            label: formatUrlLabel(node.label),
+            severity: node.color
           }
         });
       });
@@ -42,18 +41,17 @@
         });
       });
 
-      isLoading = false;   // Trigger DOM update for {#if} block
-
-      await tick();  // Ensure DOM is updated before accessing #cy
+      isLoading = false;
+      await tick();
 
       const container = document.getElementById('cy');
       if (!container) {
-          console.error('Cytoscape container not found!');
-          return;
+        console.error('Cytoscape container not found!');
+        return;
       }
 
       cy = cytoscape({
-        container: container,
+        container,
         elements,
         style: [
           {
@@ -90,12 +88,34 @@
 
       window.addEventListener('resize', () => cy.resize());
 
+      // Optional: show tooltip/alert on node click
+      cy.on('tap', 'node', evt => {
+        const node = evt.target;
+        console.log(`Clicked node: ${node.data().label}`);
+        // alert(`Node: ${node.data().label}`);
+      });
+
     } catch (err) {
       console.error(err);
       error = 'Unable to load Tree Graph. Please try again later.';
       isLoading = false;
     }
   });
+
+  function zoomIn() {
+    if (cy) cy.zoom(cy.zoom() + 0.2);
+  }
+
+  function zoomOut() {
+    if (cy) cy.zoom(cy.zoom() - 0.2);
+  }
+
+  function resetView() {
+    if (cy) {
+      cy.fit();
+      cy.center();
+    }
+  }
 </script>
 
 <style>
@@ -138,6 +158,29 @@
     margin-top: 20px;
     font-weight: bold;
   }
+
+  .control-buttons {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .control-buttons button {
+    background-color: lightgray;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .control-buttons button:hover {
+    background-color: #ddd;
+  }
 </style>
 
 <h1>Tree Graph View</h1>
@@ -147,7 +190,14 @@
 {:else if error}
   <p class="error">{error}</p>
 {:else}
-  <div id="cy"></div>
+  <div style="position: relative;">
+    <div id="cy"></div>
+    <div class="control-buttons">
+      <button on:click={zoomIn}>Zoom In</button>
+      <button on:click={zoomOut}>Zoom Out</button>
+      <button on:click={resetView}>Center</button>
+    </div>
+  </div>
   <div class="legend">
     <p><span style="background:#3498db"></span> Info</p>
     <p><span style="background:#f1c40f"></span> Low</p>
