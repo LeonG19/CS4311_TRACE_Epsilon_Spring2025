@@ -608,12 +608,29 @@ async def export_project(projectName: str):
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
-@app.post("/submit_results/{result_type}")
-async def submit_results(result_type, file: UploadFile=File(...)):
+@app.post("/submit_results/{result_type}/{project_name}")
+async def submit_results(result_type, project_name , file: UploadFile=File(...)):
     try:
         test_data = await file.read()
+
         test_data=json.loads(test_data)
-        pm.submit_results(test_data, result_type)
+        pm.submit_results(test_data, result_type, project_name)
+    except Exception as e:
+        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+
+@app.post("/submit_txt_results/{result_type}/{project_name}")
+async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
+    try:
+        test_data = await file.read()
+        test_data = test_data.decode("utf-8")
+        lines= test_data.strip().splitlines()
+        results = []
+        header= lines[0].split(",")
+        for line in lines[1:]:
+            values = line.split(",",1)
+            result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
+            results.append(result)
+        pm.submit_results(results, result_type, project_name)    
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
 

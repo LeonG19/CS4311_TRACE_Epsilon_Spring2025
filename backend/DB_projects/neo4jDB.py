@@ -448,6 +448,19 @@ class Neo4jInteractive:
             result = session.run(query, initials=analyst_initials)
             return [dict(record["p"]) for record in result]
 
+    def get_results_by_scan(self, project_name, run_id):
+        query = """MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+                RETURN r"""
+
+        with self.driver.session() as session:
+            try:
+                results = session.execute_read(
+                    lambda tx: tx.run(query, project_name=project_name, run_id=run_id).data()
+                )
+                return [dict(record["e"]) for record in results]
+            except Exception as e:
+                return {"status": "failure", "error": str(e)}
+
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
