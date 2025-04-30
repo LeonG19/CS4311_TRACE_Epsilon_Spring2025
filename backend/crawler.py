@@ -163,11 +163,9 @@ class Crawler:
                     await asyncio.sleep(0.1)
                 else:
                     self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
-                    self.tree_structure[url] = list(links)
                     await asyncio.sleep(0.1)
             else:
                 self.retreive_url_info(None, url, [], status_severity, error=True) #True if error has indeed occurred
-                self.tree_structure[url] = list(links)
                 await asyncio.sleep(0.1)
 
             processed_requests += 1  # Increment processed requests

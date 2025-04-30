@@ -135,10 +135,9 @@ class Neo4jInteractive:
                 session.execute_write(
                 lambda tx: tx.run(
                     """
+                    MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
                     SET s.type = $type
-                    WITH s
-                    MATCH (p:Project {name: $project_name})
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -147,6 +146,9 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
+                    result["id"]= str(result["id"])+"_"+run_id
+                    if "error" in result and isinstance(result["error"], str):
+                        result["error"] = result["error"].lower() == "true"
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
                     query = f"CREATE (r:Result {{ {fields} }})"
@@ -156,8 +158,10 @@ class Neo4jInteractive:
                         session.execute_write(lambda tx: tx.run(query, result))
 
                         session.execute_write(lambda tx: tx.run(
-                            """ MATCH (s:ScanRun {run_id: $run_id}), (r:Result {id: $result_id})
-                            MERGE (s)-[:HAS_RESULT]->(r)""",{"run_id": run_id, "result_id": result["id"]}))
+                            """ MATCH (s:ScanRun {run_id: $run_id})
+                                MATCH (r:Result {id: $result_id})
+                                MERGE (s)-[:HAS_RESULT]->(r)""",
+                                {"run_id": run_id, "result_id": result["id"]}))
                         
                         self.relationship_results(project_name, run_id)
                     except Exception as e:
