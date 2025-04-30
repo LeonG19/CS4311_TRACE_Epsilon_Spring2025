@@ -65,16 +65,14 @@ class Neo4jInteractive:
     #         description: Some text to describe the project, MachineIP: the ip associated to that project
     #         status: current status of the project, list_files: list of all the files that the project have
     #@returns: JSON format of with success or error messages
-    def create_project(self, Project_Name, lockedstatus, description, MachineIP, status, list_files):
-        locked_bool = lockedstatus if isinstance(lockedstatus, bool) else lockedstatus.lower() == "true"
-        if not is_ip_valid(MachineIP):
-            return {"status": "failure", "error":"Invalid IP"}
-        todayDate=datetime.now()
-        formatDate = todayDate.strftime("%Y-%m-%dT%H:%M:%S")
-        query= """CREATE (p: Project {name: $name, locked:$locked_status, 
-                Stamp_Date: datetime($Stamp_Date), description: $description, MachineIP: $MachineIP, Status: $Status, files: $files, last_edit_date: datetime($last_edit), is_deleted:false})"""
+    def create_project(self, Project_Name, start_date, end_date, description, list_files):
+        query = """CREATE (p:Project {name: $name, locked: false, 
+               Stamp_Date: datetime($Stamp_Date), start_date: $start_date,  end_date: $end_date, 
+               description: $description, MachineIP: "0.0.0.0", Status: "Active", 
+               files: $files, last_edit_date: datetime($last_edit), is_deleted: false})"""
+
         with self.driver.session() as session:
-            session.run(query, name=str(Project_Name), locked_status=locked_bool, Stamp_Date=formatDate, description=str(description), MachineIP=str(MachineIP), Status=str(status).capitalize(), files=[]if list_files=="" else list(list_files), last_edit=formatDate)
+            session.run(query, name=str(Project_Name), start_date=str(start_date), end_date=str(end_date), Stamp_Date=start_date, description=str(description), files=[]if list_files=="" else list(list_files), last_edit=start_date)
             return {"status": "success"}
         
     def relationship_results(self, project_name, run_id):
