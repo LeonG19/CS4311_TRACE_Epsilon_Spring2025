@@ -23,8 +23,8 @@ import sys
 from proxy_logic import handle_proxy_request, request_history, response_history
 from sqlInjectorManager import SQLInjectionManager
 import mysql.connector
-
 from sqlInjectorManager import SQLInjectionManager
+from io import BytesIO, StringIO
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
 
@@ -356,6 +356,7 @@ class AIParams(BaseModel):
 async def generate_credentials_endpoint(file: UploadFile = File(None), data: str = Form(...)):
     #logging.info(f"Received credential generation request: {req}")
     file_word = ""
+    data = json.loads(data)
     try:
         if file:
             # Save the uploaded file
@@ -367,17 +368,18 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
  
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-    craw_state = extract_services_sites([
-    'outputs_crawler/crawl_results.json',      # required
-    'outputs_bruteforcer/brute_force_results.json',         # optional
-    'outputs_fuzzer/fuzz_results.json'                 # optional
-    ])
+    print(data)
 
-    if (craw_state == False):
-        return {"crawler": craw_state}
-       
-    urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
+    
+    scans = await get_scans(data["projectName"])
+    if (scans == []):
+        return {"scans": False}
+    urls = [
+    scan["url"].strip()
+    for scan in scans
+    if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
+    ]
+
     csv_path = "./csv_uploads/web_text.csv"
 
     print("Starting web scraper")
@@ -389,7 +391,7 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
 
-    data = json.loads(data)
+    
     global generator
     generator = CredentialGeneratorMDP(
         csv_path= csv_path,
@@ -408,7 +410,33 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
+
     return {"credentials": credentials}
+    
+
+
+
+def creds_to_uploadfile(creds) -> UploadFile:
+    # 1) Create a text buffer that won't mangle newlines
+    text_buf = StringIO(newline="")
+
+    # 2) Write CSV into it (no newline kw on writer)
+    writer = csv.writer(text_buf)
+    writer.writerow(["username", "password"])
+    for u, p in creds:
+        writer.writerow([u, p])
+
+    # 3) Get its UTF-8 bytes and wrap in a BytesIO
+    data = text_buf.getvalue().encode("utf-8")
+    byte_buf = BytesIO(data)
+
+    # 4) Finally, build the UploadFile
+    return UploadFile(
+        filename="credentials.txt",
+        file=byte_buf,
+     
+    )
+
 
 # control endpoints for the fuzzer
 @app.post("/stop_AI")
@@ -457,12 +485,13 @@ class FilenameInput(BaseModel):
     filename: str
 
 @app.post("/delete_userpassword")
-async def delete_userpassword(data: FilenameInput):
+async def delete_userpassword(data: str = Form(...)):
     
-    filename = data.filename
+    filename = data.strip('"\'')
     print(f"Got filename: {filename}")
 
-    for root, dirs, files in os.walk("/user_passwords_uploads"):
+    for root, dirs, files in os.walk("./user_passwords_uploads"):
+        print(files)
         if filename in files:
             file_path = os.path.join(root, filename)
             os.remove(file_path)
@@ -642,20 +671,25 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
             result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
             results.append(result)
         pm.submit_results(results, result_type, project_name)    
+        return results
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
-    return pm.get_ai_results(project_name)
-
+    data = pm.get_ai_results(project_name)
+    uDict = {}
+    for i, dict in enumerate(data):
+        uDict[("wordlist_"+str(i))] = dict["run_id"]
+    print(uDict) 
+    return uDict
+    
 @app.get("/delete_AI/{scan_id}")
 async def delete_ai_results(scan_id: str):
     result = pm.delete_ai_results(scan_id)
     return result
     
-
 @app.post("/project_folder/{folder_name}")
 async def get_projects_in_folder(folder_name: str):
     result = pm.get_projects_in_folder(folder_name)
