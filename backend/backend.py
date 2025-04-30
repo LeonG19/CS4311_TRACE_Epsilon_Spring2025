@@ -611,6 +611,11 @@ async def create_project(project_name: str = Form(...),
     result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
     return {"status": "success"}
 
+@app.get("/getResult/{projectName}")
+async def get_scans(projectName: str):
+    return pm.get_all_scans(projectName)
+
+
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
     result= pm.check_login(initials)
@@ -635,15 +640,48 @@ async def export_project(projectName: str):
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
-@app.post("/submit_results/{result_type}")
-async def submit_results(result_type, file: UploadFile=File(...)):
+@app.post("/submit_results/{result_type}/{project_name}")
+async def submit_results(result_type, project_name , request: Request):
+    if not [result_type,project_name]:
+        return {"status": "failure", "error": "Missing result_type or project_name"}
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type, project_name)
+    except Exception as e:
+        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
+
+@app.post("/submit_txt_results/{result_type}/{project_name}")
+async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
     try:
         test_data = await file.read()
-        test_data=json.loads(test_data)
-        pm.submit_results(test_data, result_type)
+        test_data = test_data.decode("utf-8")
+        lines= test_data.strip().splitlines()
+        results = []
+        header= lines[0].split(",")
+        for line in lines[1:]:
+            values = line.split(",",1)
+            result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
+            results.append(result)
+        pm.submit_results(results, result_type, project_name)    
+        return results
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
 
+@app.get("/ai_results/{project_name}")
+async def get_ai_results(project_name: str):
+    data = pm.get_ai_results(project_name)
+    uDict = {}
+    for i, dict in enumerate(data):
+        uDict[("wordlist_"+str(i))] = dict["run_id"]
+    print(uDict) 
+    return uDict
+    
+@app.get("/delete_AI/{scan_id}")
+async def delete_ai_results(scan_id: str):
+    result = pm.delete_ai_results(scan_id)
+    return result
+    
 @app.post("/project_folder/{folder_name}")
 async def get_projects_in_folder(folder_name: str):
     result = pm.get_projects_in_folder(folder_name)
@@ -761,25 +799,3 @@ async def create_initials(initials:str, type:int):
     result=n4ji.create_Analyst(" ", role, initials) 
     
     return result
-
-# trying to fix the db not receiving this is for bruteforcer
-@app.post("/submit_results/{result_type}/{project_name}")
-async def submit_results(
-    request: Request,
-    result_type: str,
-    project_name: str
-):
-    try:
-        body = await request.json()
-        results = body.get("results")
-        if not isinstance(results, list):
-            raise HTTPException(status_code=400, detail="`results` must be a list")
- 
-        pm.submit_results(results, result_type, project_name)
-        return {"status": "success", "inserted": len(results)}
- 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Error saving results", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Submission failed: {e}")

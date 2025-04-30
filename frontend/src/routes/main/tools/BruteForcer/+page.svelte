@@ -242,7 +242,7 @@
   // inputs to be sent to the backend for brute-forcing
   async function handleSubmit() {
     console.log("handleSubmit called");
-    
+
     // Validation checks for required fields
     if (!bruteForceParams.target_url) {
       alert('Target URL is required');
@@ -510,22 +510,32 @@
   // this is where we pass the file to db
   async function submitbruteResultsToProject() {
     try {
-      const resp = await fetch(
-        `http://localhost:8000/submit_results/bruteforcer/${projectName}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ results }),
-        }
-      );
-      const body = await resp.json();
-      if (body.status === "success") {
-        console.log(`✅ Saved ${body.inserted} results for ${projectName}`);
-      } else {
-        console.error("Save failed:", body.detail || body.error);
+      // Ensure the `results` variable holds the actual brute force results as a JSON object
+      const resultsData = {
+        type: "bruteforcer", // Set type to "bruteforcer"
+        projectName: projectName, // Ensure this is set correctly before calling
+        results: results // This is the actual results from brute force, should be a JSON object
+      };
+
+      console.log("Submitting brute force results to project:", resultsData); // Debugging log
+
+      // Sending the POST request with the results to the appropriate endpoint
+      const response = await fetch(`http://localhost:8000/submit_results/bruteforcer/${projectName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resultsData) // Send the `resultsData` as the body
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit results: ${response.statusText}`);
       }
-    } catch (e) {
-      console.error("Network error on submit:", e);
+
+      const result = await response.json();
+      console.log("Results submitted successfully:", result);
+      addToTerminal('Results submitted successfully', 'success'); // Update the terminal with success message
+    } catch (error) {
+      console.error("Error submitting brute force results:", error);
+      addToTerminal(`Error submitting results: ${error.message}`, 'error'); // Update the terminal with error message
     }
   }
 
