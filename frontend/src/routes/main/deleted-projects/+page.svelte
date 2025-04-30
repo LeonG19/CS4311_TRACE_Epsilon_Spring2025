@@ -4,6 +4,7 @@
   let deletedProjects = [];
   let error = null;
   let initials = '';
+  let file;
 
   // Fetch projects on mount
   onMount(async () => {
@@ -59,188 +60,22 @@
 
   // Function to send the specific test data
   async function sendTestData() {
-    const jsonData = [
-    {
-        "id": 1,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133028,
-        "payload": "root",
-        "length": 134038,
-        "error": false
-    },
-    {
-        "id": 2,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133035,
-        "payload": "admin",
-        "length": 134045,
-        "error": false
-    },
-    {
-        "id": 3,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133028,
-        "payload": "test",
-        "length": 134038,
-        "error": false
-    },
-    {
-        "id": 4,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133035,
-        "payload": "guest",
-        "length": 134045,
-        "error": false
-    },
-    {
-        "id": 5,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133028,
-        "payload": "info",
-        "length": 134038,
-        "error": false
-    },
-    {
-        "id": 6,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133021,
-        "payload": "adm",
-        "length": 134031,
-        "error": false
-    },
-    {
-        "id": 7,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133035,
-        "payload": "mysql",
-        "length": 134045,
-        "error": false
-    },
-    {
-        "id": 8,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133028,
-        "payload": "user",
-        "length": 134038,
-        "error": false
-    },
-    {
-        "id": 9,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133091,
-        "payload": "administrator",
-        "length": 134101,
-        "error": false
-    },
-    {
-        "id": 10,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133042,
-        "payload": "oracle",
-        "length": 134052,
-        "error": false
-    },
-    {
-        "id": 11,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133021,
-        "payload": "ftp",
-        "length": 134031,
-        "error": false
-    },
-    {
-        "id": 12,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133014,
-        "payload": "pi",
-        "length": 134024,
-        "error": false
-    },
-    {
-        "id": 13,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133042,
-        "payload": "puppet",
-        "length": 134052,
-        "error": false
-    },
-    {
-        "id": 14,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133049,
-        "payload": "ansible",
-        "length": 134059,
-        "error": false
-    },
-    {
-        "id": 15,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133056,
-        "payload": "ec2-user",
-        "length": 134066,
-        "error": false
-    },
-    {
-        "id": 16,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133049,
-        "payload": "vagrant",
-        "length": 134059,
-        "error": false
-    },
-    {
-        "id": 17,
-        "response": 200,
-        "lines": 1103,
-        "words": 6907,
-        "chars": 133063,
-        "payload": "azureuser",
-        "length": 134073,
-        "error": false
-    }
-];
-
     try {
-      const response = await fetch(`http://localhost:8000/submit_results/Fuzzer/Delete_test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(jsonData)  // Send the fixed JSON data
-      });
-      console.log('Response:', response);
+      const formData = new FormData();
+      const fileInput = document.querySelector('#fileInput'); // Asegúrate de tener un input de archivo en tu HTML
+
+      if (!fileInput.files.length) {
+      throw new Error('No file selected');
+    }
+
+      const file = fileInput.files[0];
+      formData.append('file', file);
+
+      const response = await fetch('http://localhost:8000/submit_txt_results/AI/Hacking_Mexico', {
+      method: 'POST',
+      body: formData // No necesitas headers, fetch los pone automáticamente con FormData
+  });
+      console.log('Response:', formData.getAll('file'));
       if (response.ok) {
         const result = await response.json();
         console.log('Data sent successfully:', result);
@@ -311,6 +146,7 @@
 <!-- Button to send test data -->
 <div class="d-flex justify-content-between align-items-center mt-4">
 <h1>Test Data Sending</h1>
+<input type="file" id="fileInput" accept=".txt" />
 <button class="btn btn-danger" on:click={sendTestData}>
   Send Test Data
 </button>
