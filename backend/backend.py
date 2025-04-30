@@ -815,6 +815,7 @@ from fastapi import HTTPException
 
 class DBEnumerator:
     def enumerate(self, host, port, username, password):
+        conn = None
         try:
             conn = mysql.connector.connect(
                 host=host,
@@ -851,10 +852,14 @@ class DBEnumerator:
             }
         except mysql.connector.Error as err:
             raise HTTPException(status_code=500, detail=f"MySQL Error: {err}")
+
         finally:
-            if conn.is_connected():
-                cursor.close()
-                conn.close()
+            try:
+                if conn is not None and conn.is_connected():
+                    cursor.close()
+                    conn.close()
+            except Exception as e:
+                pass 
                 ''
 
                 # After the DBEnumerator class definition or import
