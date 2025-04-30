@@ -1,4 +1,6 @@
 <script>
+  import { onMount } from 'svelte';
+
   let dbInputs = [
     {
       id: "host",
@@ -50,6 +52,7 @@
   let error = null;
   let statusText = "Waiting for input...";
   let progress = 0;
+  let projectName = "";
   let errorMessages = {
     host: "",
     port: "",
@@ -57,15 +60,20 @@
     password: ""
   };
 
+  onMount(() => {
+    projectName = sessionStorage.getItem("name") || "";
+    console.log("Project Name:", projectName);
+  });
+
   function dynamicParamUpdate(id, value) {
     dbParams[id] = value;
   }
 
   async function handleSubmit(event) {
+    event.preventDefault();
     dbResult = null;
     error = null;
     loading = true;
-    event.preventDefault();
     statusText = "Connecting to database...";
     progress = 25;
 
@@ -129,6 +137,34 @@
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  async function submitToBackend() {
+    if (!dbResult || !projectName) {
+      alert("Missing DB results or project name.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/submit_results/db_enum/${projectName}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dbResult)
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert("Results submitted to database successfully.");
+        console.log("Backend response:", result);
+      } else {
+        throw new Error(result.error || "Backend rejected the submission.");
+      }
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert("Submission failed.");
+    }
+  }
 </script>
 
 <div class="dbEnumContainer">
@@ -159,7 +195,9 @@
         {/if}
       </label>
     {/each}
-    <button type="submit" disabled={loading}>{loading ? "Enumerating..." : "Run Enumeration"}</button>
+    <button type="submit" disabled={loading}>
+      {loading ? "Enumerating..." : "Run Enumeration"}
+    </button>
   </form>
 
   {#if error}
@@ -171,6 +209,7 @@
       <h2>Enumeration Results</h2>
       <pre>{JSON.stringify(dbResult, null, 2)}</pre>
       <button on:click={downloadResults}>Download JSON</button>
+      <button on:click={submitToBackend}>Save to Database</button>
     </div>
   {/if}
 </div>
@@ -203,6 +242,7 @@
     border-radius: 6px;
     color: white;
     cursor: pointer;
+    margin-right: 10px;
   }
 
   button:hover {
@@ -224,7 +264,6 @@
   }
 
   .progress {
-    width: 0%;
     height: 100%;
     background-color: #646cff;
     transition: width 0.5s ease-in-out;
