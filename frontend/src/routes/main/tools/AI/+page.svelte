@@ -22,8 +22,7 @@
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let projectName
   let wordlist;
-  let uList;
-
+  let uDict ={};
   onMount(async()=>{
     projectName= sessionStorage.getItem('name');
     aiParams["projectName"] = projectName
@@ -186,14 +185,15 @@
 
   async function fetchUserList() {
     try {
-      const response = await fetch("http://localhost:8000/display_userList", {
-        method: "POST",
+      const response = await fetch(("http://localhost:8000/ai_results/" + projectName), {
+        method: "GET",
       });
       const data = await response.json();
 
-      uList = data
+      uDict = data
+      
 
-      console.log("Retrieved wordlist: ", uList)
+      console.log("Retrieved wordlist: ", uDict)
     } catch (error) {
       console.error("Error fetching user list:", error);
     }
@@ -372,7 +372,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each uList as file}
+            {#each Object.keys(uDict) as file}
               <tr>
                 <td>{file}</td>
                 <td><button id={file} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(file);wordlistToParams()}}>Delete</button></td>

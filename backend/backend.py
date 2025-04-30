@@ -680,7 +680,12 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
     
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
-    return pm.get_ai_results(project_name)
+    data = pm.get_ai_results(project_name)
+    uDict = {}
+    for i, dict in enumerate(data):
+        uDict[("wordlist_"+str(i))] = dict["run_id"]
+    print(uDict) 
+    return uDict
     
 
 @app.post("/project_folder/{folder_name}")
