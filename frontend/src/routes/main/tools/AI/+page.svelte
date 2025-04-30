@@ -1,40 +1,41 @@
 <script>
 
   import { preventDefault } from "svelte/legacy";
+
   import { onDestroy } from 'svelte';
 
-  let time = 0; // time in milliseconds
-  let displayTime = '0.00';
-  let finalTime = '0.00';
-  let interval;
+let time = 0; // time in milliseconds
+let displayTime = '0.00';
+let finalTime = '0.00';
+let interval;
 
-  function startTimer() {
-    time = 0;
-    clearInterval(interval);
-    interval = setInterval(() => {
-      time += 10;
-      displayTime = (time / 1000).toFixed(2);
-    }, 10);
-  }
+function startTimer() {
+  time = 0;
+  clearInterval(interval);
+  interval = setInterval(() => {
+    time += 10;
+    displayTime = (time / 1000).toFixed(2);
+  }, 10);
+}
 
-  function stopTimer() {
-    clearInterval(interval);
-  }
+function stopTimer() {
+  clearInterval(interval);
+}
 
-  $: if (generating) {
-    startTimer();
-  } else {
-    stopTimer();
-  }
+$: if (generating) {
+  startTimer();
+} else {
+  stopTimer();
+}
 
-  $: if (displayingResults) {
-    finalTime = displayTime;
-  } else {
-  }
+$: if (displayingResults) {
+  finalTime = displayTime;
+} else {
+}
 
-  onDestroy(() => {
-    clearInterval(interval);
-  });
+onDestroy(() => {
+  clearInterval(interval);
+});
 
   import {onMount} from "svelte";
   let err = ""
@@ -54,10 +55,17 @@
 
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
+<<<<<<< HEAD
   let projectName
   let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
   let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
 
+=======
+
+  let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
+  let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
+  let projectName
+>>>>>>> fc246d6557573157627049ffbf49524d02bd20b8
   let wordlist;
   let uDict ={};
   onMount(async()=>{

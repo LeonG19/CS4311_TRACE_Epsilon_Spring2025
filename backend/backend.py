@@ -373,7 +373,9 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     
     scans = await get_scans(data["projectName"])
     if (scans == []):
+        print("no scans")
         return {"scans": False}
+    print(scans)
     urls = [
     scan["url"].strip()
     for scan in scans
@@ -406,7 +408,7 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
         pass_include_sym = data["passSymb"], 
         pass_length = data["passLen"] 
     )
-    credentials = generator.generate_credentials(10)
+    credentials = generator.generate_credentials(int(data["userNum"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
