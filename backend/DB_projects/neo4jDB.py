@@ -150,6 +150,7 @@ class Neo4jInteractive:
                     if "error" in result and isinstance(result["error"], str):
                         result["error"] = result["error"].lower() == "true"
 
+
                     fields = ", ".join([f"{key}: ${key}" for key in result])
                     query = f"CREATE (r:Result {{ {fields} }})"
 
@@ -177,6 +178,23 @@ class Neo4jInteractive:
                     }
 
         return {"status": "success"}
+    
+    def get_all_results_by_project(self, project_name):
+        query = """
+        MATCH (p {name: $project_name})
+        WHERE EXISTS {
+        MATCH (p)-[:HAS_SCAN]->(sc:ScanRun)
+        WHERE toLower(sc.type) = 'crawler'
+        }
+        MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        MATCH (s)-[:HAS_RESULT]->(r)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            result = session.run(query, project_name=project_name)
+            return [dict(record["r"]) for record in result]
+
     
 
     def export_project(self, project_name):
@@ -451,6 +469,19 @@ class Neo4jInteractive:
         with self.driver.session() as session:
             result = session.run(query, initials=analyst_initials)
             return [dict(record["p"]) for record in result]
+
+    def get_results_by_scan(self, project_name, run_id):
+        query = """MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+                RETURN r"""
+
+        with self.driver.session() as session:
+            try:
+                results = session.execute_read(
+                    lambda tx: tx.run(query, project_name=project_name, run_id=run_id).data()
+                )
+                return [dict(record["e"]) for record in results]
+            except Exception as e:
+                return {"status": "failure", "error": str(e)}
 
     
 def is_ip_valid(ip):

@@ -461,8 +461,14 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
        
     urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
     csv_path = "./csv_uploads/web_text.csv"
+
+    print("Starting web scraper")
     scrapper = WebScraper(urls)
+
+    print("Starting generate csv")
     scrapper.generate_csv(csv_path)
+
+    print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
 
     data = json.loads(data)
@@ -666,6 +672,11 @@ async def create_project(project_name: str = Form(...),
     result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
     return {"status": "success"}
 
+@app.get("/getResult/{projectName}")
+async def get_scans(projectName: str):
+    return pm.get_all_scans(projectName)
+
+
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
     result= pm.check_login(initials)
@@ -689,19 +700,34 @@ async def export_project(projectName: str):
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
-
+    
 @app.post("/submit_results/{result_type}/{project_name}")
-async def submit_results(result_type: str, project_name: str, request: Request):
+async def submit_results(result_type, project_name , request: Request):
+    if not [result_type,project_name]:
+        return {"status": "failure", "error": "Missing result_type or project_name"}
     try:
         # Convert Pydantic models to dictionary for processing
         print("blah blah blah blah")
         print("in endpoint, printing result_type", result_type , type(result_type))
         print("project", project_name)
         test_data = await request.json()
-        print(test_data)
-        res = pm.submit_results(test_data, result_type, project_name)
-        print(res)
-        return {"status": "success"}
+        pm.submit_results(test_data, result_type, project_name)
+    except Exception as e:
+        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
+
+@app.post("/submit_txt_results/{result_type}/{project_name}")
+async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
+    try:
+        test_data = await file.read()
+        test_data = test_data.decode("utf-8")
+        lines= test_data.strip().splitlines()
+        results = []
+        header= lines[0].split(",")
+        for line in lines[1:]:
+            values = line.split(",",1)
+            result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
+            results.append(result)
+        pm.submit_results(results, result_type, project_name)    
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
 

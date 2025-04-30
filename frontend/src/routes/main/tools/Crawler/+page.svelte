@@ -1,6 +1,6 @@
 <script>
   import { preventDefault } from "svelte/legacy";
-  import { onMount } from "svelte";
+  import {onMount} from "svelte";
 
   let crawlerInput = [
     { id: "url", label: "Target URL", type: "text", value: "", example: "Ex: https://example.com", required: true },
@@ -41,6 +41,7 @@
 
   let pauseAvailable = 1
   let resumeAvailable = 0
+  let projectName= "";
 
   let errorMessages = {
     url: "",
