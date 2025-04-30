@@ -146,12 +146,16 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
-                    result["id"]= str(result["id"])+"_"+run_id
+                    if "id" in result and isinstance(result["id"], int):
+                        result["id"] = str(result["id"]) + "_" + run_id
+                    else:
+                        result["id"] = run_id
                     if "error" in result and isinstance(result["error"], str):
                         result["error"] = result["error"].lower() == "true"
 
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
+                    print(fields)
          
                     query = f"CREATE (r:Result {{ {fields} }})"
 
