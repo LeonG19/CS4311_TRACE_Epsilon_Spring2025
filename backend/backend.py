@@ -369,19 +369,17 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     print(data)
-    craw_state = extract_services_sites([
-    'outputs_crawler/crawl_results.json',      # required
-    'outputs_bruteforcer/brute_force_results.json',         # optional
-    'outputs_fuzzer/fuzz_results.json'                 # optional
-    ])
+
     
     scans = await get_scans(data["projectName"])
     if (scans == []):
-        return {"crawler": craw_state}
-    else:
-        print(scans[0])
-       
-    urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
+        return {"scans": False}
+    urls = [
+    scan["url"].strip()
+    for scan in scans
+    if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
+    ]
+
     csv_path = "./csv_uploads/web_text.csv"
 
     print("Starting web scraper")
@@ -687,7 +685,11 @@ async def get_ai_results(project_name: str):
     print(uDict) 
     return uDict
     
-
+@app.get("/delete_AI/{scan_id}")
+async def delete_ai_results(scan_id: str):
+    result = pm.delete_ai_results(scan_id)
+    return result
+    
 @app.post("/project_folder/{folder_name}")
 async def get_projects_in_folder(folder_name: str):
     result = pm.get_projects_in_folder(folder_name)

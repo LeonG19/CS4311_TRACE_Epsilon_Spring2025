@@ -123,13 +123,9 @@
   async function handleDelete(file){
     console.log(file)
     try {
-      const formData = new FormData();
-      formData.append('data', JSON.stringify(file));
-      const response = await fetch("http://localhost:8000/delete_userpassword", {
-        method: "POST",
-        body: formData
+      const response = await fetch(("http://localhost:8000/delete_AI/"+file), {
+        method: "GET"
       });
-      const data = await response.json();
 
       if(response.ok){
         console.log("Delete Successful")
@@ -372,10 +368,10 @@
             </tr>
           </thead>
           <tbody>
-            {#each Object.keys(uDict) as file}
+            {#each Object.entries(uDict) as [filename, value]}
               <tr>
-                <td>{file}</td>
-                <td><button id={file} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(file);wordlistToParams()}}>Delete</button></td>
+                <td>{filename}</td>
+                <td><button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(value);wordlistToParams()}}>Delete</button></td>
               </tr>
             {/each}
           </tbody>
