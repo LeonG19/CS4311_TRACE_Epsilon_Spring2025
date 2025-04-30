@@ -379,8 +379,14 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
        
     urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
     csv_path = "./csv_uploads/web_text.csv"
+
+    print("Starting web scraper")
     scrapper = WebScraper(urls)
+
+    print("Starting generate csv")
     scrapper.generate_csv(csv_path)
+
+    print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
 
     data = json.loads(data)
@@ -757,7 +763,13 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 
 #Create new Initials directly into the db.
 #THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
-@app.post("/create_initials/{initials}/")
-async def create_initials(initials:str):
-    result=n4ji.create_Analyst(" ", "analyst", initials) 
-    return {"status": "success", "results": result}
+@app.post("/create_initials/{initials}/{type}")
+async def create_initials(initials:str, type:int):
+    role="Analyst"
+    
+    if type == 1:
+        role = "Lead"
+    
+    result=n4ji.create_Analyst(" ", role, initials) 
+    
+    return result
