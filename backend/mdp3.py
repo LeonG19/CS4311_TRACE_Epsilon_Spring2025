@@ -253,7 +253,7 @@ class CredentialGeneratorMDP:
         if ch.isdigit() and not self.user_include_num:
             return False
         # Check for special characters (a common set could be defined)
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.user_include_sym:
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\".<>?/~`" and not self.user_include_sym:
             return False
         return True
 
@@ -262,7 +262,7 @@ class CredentialGeneratorMDP:
             return False
         if ch.isdigit() and not self.pass_include_num:
             return False
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.pass_include_sym:
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\".<>?/~`" and not self.pass_include_sym:
             return False
         return True
     
@@ -376,7 +376,7 @@ class CredentialGeneratorMDP:
     def enhance_password(self, password: str) -> str:
         enhanced = password.capitalize()
         if self.pass_include_sym:
-            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}{random.randint(0, 9)}"
+            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}"
             
         if self.pass_include_num:
             enhanced = f"{enhanced}{random.randint(0, 9)}"

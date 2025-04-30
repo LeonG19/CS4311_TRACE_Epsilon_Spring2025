@@ -2,6 +2,7 @@
 
   import { preventDefault } from "svelte/legacy";
 
+  import {onMount} from "svelte";
   let err = ""
   let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
@@ -19,13 +20,18 @@
 
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
-
+  let projectName
   let wordlist;
-
   let uList;
 
+  onMount(async()=>{
+    projectName= sessionStorage.getItem('name');
+    aiParams["projectName"] = projectName
+    console.log("Project Name:", projectName);
+  })
+
   let aiParams = {
-    wordlist : ""
+    wordlist : "",
   }
 
   let abortController = null;
@@ -87,6 +93,8 @@
 
     handleSubmit();
   }
+
+
 
   function saveWordlist(){
     let textContent = "Username,Password\n";
@@ -248,7 +256,7 @@
     formData.append("file",file);
 
     try{
-      const response = await fetch("http://localhost:8000/save_userpassword", {
+      const response = await fetch(("http://localhost:8000/submit_txt_results/AI/"+projectName), {
       method: "POST",
       body: formData
       });
