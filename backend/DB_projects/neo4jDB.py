@@ -200,6 +200,32 @@ class Neo4jInteractive:
             result = session.run(query, project_name=project_name)
             return [dict(record["r"]) for record in result]
 
+    def get_ai_runs_with_results(self, project_name):
+        with self.driver.session() as session:
+            try:
+                query = """
+                MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+                WHERE toLower(s.type) = 'ai'
+                OPTIONAL MATCH (s)-[:HAS_RESULT]->(r:Result)
+                RETURN s, collect(r) AS results
+                """
+                result = session.run(query, project_name=project_name)
+
+                runs = []
+                for record in result:
+                    scan = dict(record["s"]) 
+                    scan["results"] = [dict(r) for r in record["results"] if r]
+                    runs.append(scan)
+
+                return runs
+                
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to retrieve AI results: {str(e)}"
+                }
+
+
     
 
     def export_project(self, project_name):
