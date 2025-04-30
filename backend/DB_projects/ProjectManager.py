@@ -1,3 +1,4 @@
+#first version
 from .neo4jDB import Neo4jInteractive
 
 class ProjectManager:
@@ -122,6 +123,17 @@ class ProjectManager:
     def get_results_per_scan(self, scan_id):
         return self.neo4j.get_results_perScan(scan_id)
 
+        # 1) so `/getScans/{project}` so keeps working
+    def get_scans_per_project(self, project_name):
+        return self.get_all_scans(project_name)
+
+    # 2) so `/getResults/{scan_id}`so can call it
+    def get_results_per_scan(self, scan_id):
+        return self.neo4j.get_results_perScan(scan_id)
+
+    # 3)
+    get_results = get_results_per_scan
+
     #doesnt work anymore
     #def get_deleted_projects(self):
     #    query = """
@@ -142,6 +154,8 @@ class ProjectManager:
     
     def export_project(self, project_name):
         return self.neo4j.export_project(project_name)
+    
 
 
-# ---------------- FOR TESTING PURPOSES ONLY ---------------- 
+# # ---------------- FOR TESTING PURPOSES ONLY ---------------- 
+

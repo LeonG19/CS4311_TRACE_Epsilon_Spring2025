@@ -17,28 +17,50 @@ class Neo4jInteractive:
     # @params Name: Name of the Analyst, ID: Id of the Analyst
     # @returns JSON with format of all analysts or status error JSON
     def create_Analyst(self, Name, role, initials):
-        # if we don't have all the parameters necessary to create an analyst we return a json with error status and erorr Message
-        if not all([Name, role, initials]):
-            return {"status": "failure", "error":"One or more parameters missing"}
-        # initial query to create user
-        query="CREATE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+        if not all([Name, role, initials]) or Name.strip() == "":
+            return {"status": "failure", "error": "One or more parameters missing"}
+
+        base_initials = initials.upper()
         
-        query_find_role = """
-        MERGE (r:Role {role: $role})
-        RETURN r
-        """
         with self.driver.session() as session:
-            # run query with params in safe way using $
-            result=session.run(query, name=str(Name), initials=str(initials).upper())
+            check_query = """
+            MATCH (a:Analyst)
+            WHERE a.initials STARTS WITH $base
+            RETURN a.initials AS existing
+            """
+            existing = session.run(check_query, base=base_initials)
+            existing_initials = [record["existing"] for record in existing]
+
+            # Generar iniciales únicas
+            new_initials = base_initials
+            count = 1
+            while new_initials in existing_initials:
+                new_initials = f"{base_initials}{count}"
+                count += 1
+
+            # Crear el analista
+            query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+            session.run(query_create, name=str(Name), initials=new_initials)
+
+            # Crear rol
+            query_find_role = """
+            MERGE (r:Role {role: $role})
+            RETURN r
+            """
             session.run(query_find_role, role=str(role).capitalize())
-            # Depending if is Lead or regular Analyst the permissinons are set
-            query_create_relation = """MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role}) MERGE (u)-[:HAS_ROLE]->(r)
-                                    SET r.can_lock_unlock= CASE r.role WHEN 'Lead' THEN true ELSE false END, 
-                                    r.can_delete = CASE r.role WHEN 'Lead' THEN true ELSE false END,
-                                    r.can_create = CASE r.role WHEN 'Lead' THEN true else false END
-                                    """
-            session.run(query_create_relation, initials=str(initials).upper(), role=str(role).capitalize())
-            return {"status": "success"}
+
+            # Relación y permisos
+            query_create_relation = """
+            MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role})
+            MERGE (u)-[:HAS_ROLE]->(r)
+            SET r.can_lock_unlock = CASE r.role WHEN 'Lead' THEN true ELSE false END, 
+                r.can_delete      = CASE r.role WHEN 'Lead' THEN true ELSE false END,
+                r.can_create      = CASE r.role WHEN 'Lead' THEN true ELSE false END
+            """
+            session.run(query_create_relation, initials=new_initials, role=str(role).capitalize())
+
+            return {"status": "success", "initials": new_initials}
+
     
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
@@ -65,16 +87,14 @@ class Neo4jInteractive:
     #         description: Some text to describe the project, MachineIP: the ip associated to that project
     #         status: current status of the project, list_files: list of all the files that the project have
     #@returns: JSON format of with success or error messages
-    def create_project(self, Project_Name, lockedstatus, description, MachineIP, status, list_files):
-        locked_bool = lockedstatus if isinstance(lockedstatus, bool) else lockedstatus.lower() == "true"
-        if not is_ip_valid(MachineIP):
-            return {"status": "failure", "error":"Invalid IP"}
-        todayDate=datetime.now()
-        formatDate = todayDate.strftime("%Y-%m-%dT%H:%M:%S")
-        query= """CREATE (p: Project {name: $name, locked:$locked_status, 
-                Stamp_Date: datetime($Stamp_Date), description: $description, MachineIP: $MachineIP, Status: $Status, files: $files, last_edit_date: datetime($last_edit), is_deleted:false})"""
+    def create_project(self, Project_Name, start_date, end_date, description, list_files):
+        query = """CREATE (p:Project {name: $name, locked: false, 
+               Stamp_Date: datetime($Stamp_Date), start_date: $start_date,  end_date: $end_date, 
+               description: $description, MachineIP: "0.0.0.0", Status: "Active", 
+               files: $files, last_edit_date: datetime($last_edit), is_deleted: false})"""
+
         with self.driver.session() as session:
-            session.run(query, name=str(Project_Name), locked_status=locked_bool, Stamp_Date=formatDate, description=str(description), MachineIP=str(MachineIP), Status=str(status).capitalize(), files=[]if list_files=="" else list(list_files), last_edit=formatDate)
+            session.run(query, name=str(Project_Name), start_date=str(start_date), end_date=str(end_date), Stamp_Date=start_date, description=str(description), files=[]if list_files=="" else list(list_files), last_edit=start_date)
             return {"status": "success"}
         
     def relationship_results(self, project_name, run_id):
@@ -146,12 +166,16 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
-                    result["id"]= str(result["id"])+"_"+run_id
-                    if "error" in result and isinstance(result["error"], str):
+                    if "id" in result and isinstance(result["id"], int):
+                        result["id"] = str(result["id"]) + "_" + run_id
+                    else:
+                        result["id"] = run_id
+                    if "error" in result and isinstance(result["error"], str) and result["error"].lower() in ("true", "false"):
                         result["error"] = result["error"].lower() == "true"
 
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
+                    print(fields)
          
                     query = f"CREATE (r:Result {{ {fields} }})"
 
@@ -180,17 +204,63 @@ class Neo4jInteractive:
 
         return {"status": "success"}
     
-    def get_scans_perProject(self, project_name):
-        query= """MATCH ({name:{project_name}})-[:HAS_SCAN]->(s) RETURN s"""
+    def get_all_results_by_project(self, project_name):
+        query = """
+        MATCH (p {name: $project_name})
+        WHERE EXISTS {
+        MATCH (p)-[:HAS_SCAN]->(sc:ScanRun)
+        WHERE toLower(sc.type) = 'crawler'
+        }
+        MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        MATCH (s)-[:HAS_RESULT]->(r)
+        RETURN r
+        """
         with self.driver.session() as session:
-            result=session.run(query, project_name=project_name)
-            return [dict(record["s"]) for record in result]
-    
-    def get_results_perScan(self, run_id):
-        query= """MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r) RETURN r"""
-        with self.driver.session() as session:
-            result=session.run(query, run_id=run_id)
+            result = session.run(query, project_name=project_name)
             return [dict(record["r"]) for record in result]
+
+    def get_ai_runs_with_results(self, project_name):
+        with self.driver.session() as session:
+            try:
+                query = """
+                MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+                WHERE toLower(s.type) = 'ai'
+                OPTIONAL MATCH (s)-[:HAS_RESULT]->(r:Result)
+                RETURN s, collect(r) AS results
+                """
+                result = session.run(query, project_name=project_name)
+
+                runs = []
+                for record in result:
+                    scan = dict(record["s"]) 
+                    scan["results"] = [dict(r) for r in record["results"] if r]
+                    runs.append(scan)
+
+                return runs
+                
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to retrieve AI results: {str(e)}"
+                }
+            
+    def delete_ai_results(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        DETACH DELETE r, s
+        RETURN COUNT(r) AS deleted_count
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            deleted_count = result.single()["deleted_count"]
+        
+            if deleted_count > 0:
+                return {"status": "success"}
+            else:
+                return {"status": "failure", "error": "No results found"}
+
+
     
 
     def export_project(self, project_name):
