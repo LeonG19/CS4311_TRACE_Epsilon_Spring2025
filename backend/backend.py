@@ -602,13 +602,12 @@ async def unlock_project(projectName: str, analyst_initials:str):
 
 @app.post("/create/")
 async def create_project(project_name: str = Form(...),
+    start_date: str = Form(...),
+    end_date: str = Form(...),
     description: str = Form(...),
-    machine_IP: str = Form(...),
-    status: str = Form(...),
     lead_analyst_initials: str = Form(...),
-    locked: str = Form(...),
     files: list[UploadFile] = File(default=[])):
-    result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
+    result=pm.create_project(project_name, start_date, end_date, description, lead_analyst_initials, files)
     return {"status": "success"}
 
 @app.get("/getResult/{projectName}")
@@ -645,6 +644,10 @@ async def submit_results(result_type, project_name , request: Request):
     if not [result_type,project_name]:
         return {"status": "failure", "error": "Missing result_type or project_name"}
     try:
+        # Convert Pydantic models to dictionary for processing
+        print("blah blah blah blah")
+        print("in endpoint, printing result_type", result_type , type(result_type))
+        print("project", project_name)
         test_data = await request.json()
         pm.submit_results(test_data, result_type, project_name)
     except Exception as e:
@@ -713,13 +716,14 @@ async def sql_inject(req: SQLRequest):
         headers=req.headers,
         enum_level=req.enum_level
     )
-    return results
+    return JSONResponse(content=results)
 
 import mysql.connector  # Make sure you pip install mysql-connector-python
 from fastapi import HTTPException
 
 class DBEnumerator:
     def enumerate(self, host, port, username, password):
+        conn = None
         try:
             conn = mysql.connector.connect(
                 host=host,
@@ -756,13 +760,20 @@ class DBEnumerator:
             }
         except mysql.connector.Error as err:
             raise HTTPException(status_code=500, detail=f"MySQL Error: {err}")
+
         finally:
-            if conn.is_connected():
-                cursor.close()
-                conn.close()
+            try:
+                if conn is not None and conn.is_connected():
+                    cursor.close()
+                    conn.close()
+            except Exception as e:
+                pass 
                 ''
 
-@app.post("/api/db_enum")
+                # After the DBEnumerator class definition or import
+db_enumerator = DBEnumerator()
+
+@app.post("/api/db_enumerator")
 async def db_enum_endpoint(request: Request):
     body = await request.json()
     host = body.get('host')
@@ -770,7 +781,7 @@ async def db_enum_endpoint(request: Request):
     username = body.get('username')
     password = body.get('password')
 
-    return db_enum.enumerate(host, port, username, password)
+    return db_enumerator.enumerate(host, port, username, password)
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
