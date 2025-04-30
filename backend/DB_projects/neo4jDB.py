@@ -224,6 +224,21 @@ class Neo4jInteractive:
                     "status": "failure",
                     "error": f"Failed to retrieve AI results: {str(e)}"
                 }
+            
+    def delete_ai_results(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        DETACH DELETE r, s
+        RETURN COUNT(r) AS deleted_count
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            deleted_count = result.single()["deleted_count"]
+        
+            if deleted_count > 0:
+                return {"status": "success"}
+            else:
+                return {"status": "failure", "error": "No results found"}
 
 
     
