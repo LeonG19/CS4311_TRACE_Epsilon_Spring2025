@@ -643,6 +643,17 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
         pm.submit_results(results, result_type, project_name)    
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+
+@app.get("/ai_results/{project_name}")
+async def get_ai_results(project_name: str):
+    return pm.get_ai_results(project_name)
+
+@app.get("/delete_AI/{scan_id}")
+async def delete_ai_results(scan_id: str):
+    result = pm.delete_ai_results(scan_id)
+    return result
+    
 
 @app.post("/project_folder/{folder_name}")
 async def get_projects_in_folder(folder_name: str):

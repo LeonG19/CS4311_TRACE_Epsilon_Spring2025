@@ -98,6 +98,13 @@ class ProjectManager:
     def get_all_scans(self, project_name):
         return self.neo4j.get_all_results_by_project(project_name)
     
+    def get_ai_results(self, project_name):
+        return self.neo4j.get_ai_runs_with_results(project_name)    
+    
+    def delete_ai_results(self, project_name):
+        return self.neo4j.delete_ai_results(project_name)
+        
+    
 
     #doesnt work anymore
     #def get_deleted_projects(self):
