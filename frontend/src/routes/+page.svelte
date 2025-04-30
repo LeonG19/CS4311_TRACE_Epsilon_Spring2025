@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation'; // Import the goto function for navigation
 
   let initials = '';
+  let name = '';
   let errorMessage = null;
   const correctInitials = 'MR'; 
 
@@ -26,20 +27,28 @@
   }
 
   async function handleInitCreation(type) {
-    const formData = new FormData();
-    formData.append('analyst_initials', initials);
-    
     try {
-      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}`,{
+      const verification = await fetch(`http://localhost:8000/analyst/${initials}/`,{
+         method: 'POST'
+      });
+
+      const data= await verification.json();
+
+      if (data['status']==='success'){
+          initials='';
+          name='';
+          throw new Error('Initials are already in use');
+      }  
+
+      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}/${name}`,{
           method: 'POST',
-          body: formData
       });
 
       if (response.ok) {
           handleStart(); //Handle login after creating analyst
       } else {
           const data = await response.json();
-          throw new Error( data.error || 'Failed to create analyst initials');
+          throw new Error( data.error || 'Failed to create analyst');
       }
       
     } catch (err) {
@@ -119,7 +128,7 @@
 
   /*grey box*/
   .welcome-box {
-    width: 300px;
+    width: 450px;
     height: 400px;
     /*display: flex;*/
     flex-direction: column;
@@ -197,6 +206,11 @@
 
       <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
       <p class="register-sub">Don't have your initials registered?</p>
+      <input
+        type="text"
+        placeholder="Enter your name"
+        bind:value={name}
+      />
       <button class="register-button" on:click={handleInitCreation(0)}>Register Analyst Initials</button>
       <button class="register-button" on:click={handleInitCreation(1)}>Register Lead Initials</button>
     </div>
