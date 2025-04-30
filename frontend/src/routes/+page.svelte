@@ -25,12 +25,12 @@
       }
   }
 
-  async function handleInitCreation() {
+  async function handleInitCreation(type) {
     const formData = new FormData();
     formData.append('analyst_initials', initials);
-
+    
     try {
-      const response = await fetch(`http://localhost:8000/create_initials/${initials}/`,{
+      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}`,{
           method: 'POST',
           body: formData
       });
@@ -120,8 +120,8 @@
   /*grey box*/
   .welcome-box {
     width: 300px;
-    height: 300px;
-    display: flex;
+    height: 400px;
+    /*display: flex;*/
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -146,7 +146,7 @@
 
   .welcome-box button {
     font-size: 1rem;
-    padding: 0.5rem;
+    padding: 1rem;
     width: 60%;
     background-color: #3b82f6;
     color: white;
@@ -162,6 +162,8 @@
 
   .register-button{
     background-color: #555555 !important;
+    width: 45% !important;
+    display:inline-block !important;
   }
 
   .register-button:hover{
@@ -195,7 +197,8 @@
 
       <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
       <p class="register-sub">Don't have your initials registered?</p>
-      <button class="register-button" on:click={handleInitCreation}>Register Initials</button>
+      <button class="register-button" on:click={handleInitCreation(0)}>Register Analyst Initials</button>
+      <button class="register-button" on:click={handleInitCreation(1)}>Register Lead Initials</button>
     </div>
   </main>
 </div>

@@ -1,6 +1,6 @@
 <script>
   import { preventDefault } from "svelte/legacy";
-  import { onMount } from "svelte";
+  import {onMount} from "svelte";
 
   let crawlerInput = [
     { id: "url", label: "Target URL", type: "text", value: "", example: "Ex: https://example.com", required: true },
@@ -41,6 +41,7 @@
 
   let pauseAvailable = 1
   let resumeAvailable = 0
+  let projectName= "";
 
   let errorMessages = {
     url: "",
@@ -132,8 +133,23 @@
         filteredRequests = crawlResult.filter((item) => !item.error).length;
         if (status.status === 'finished') {
           stopPolling();
+          try{
+            const response = await fetch(`http://localhost:8000/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(crawlResult)
+            });
+            console.log("sent to db")
+          } catch (error) {
+            alert(`An error occurred during result upload to db: ${error.message}`);
+            console.error('Error during result upload to db:', error);
+            return;
+          }
+
           crawlingToResults();
-          if (isBrowser()) localStorage.removeItem('crawler_job_id');
+          if (isBrowser()) sessionStorage.removeItem('crawler_job_id');
           jobId = null;
         }
       }
@@ -193,7 +209,7 @@
       }
       jobId = data.job_id;
       if (isBrowser()) {
-        localStorage.setItem('crawler_job_id', jobId);
+        sessionStorage.setItem('crawler_job_id', jobId);
       }
       
       startPolling();
@@ -218,6 +234,20 @@
         'Content-Type': 'application/json',
       },
     });
+    try{
+      const response = await fetch(`http://localhost:8000/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(crawlResult)
+      });
+      console.log("sent to db")
+    } catch (error) {
+      alert(`An error occurred during result upload to db: ${error.message}`);
+      console.error('Error during result upload to db:', error);
+      return;
+    }
     if (response.ok) {
       if (jobId && jobId !== 'null') {
         let statusResp = await fetch(`http://localhost:8000/crawler_status?job_id=${jobId}`);
@@ -229,7 +259,7 @@
         }
       }
       if (isBrowser()) {
-        localStorage.removeItem('crawler_job_id');
+        sessionStorage.removeItem('crawler_job_id');
       }
       jobId = null;
       crawlingToResults();
@@ -385,7 +415,7 @@ function urlToFilename(url) {
 // persistance logic (helped by ai)
 onMount(async () => {
   if (isBrowser()) {
-    jobId = localStorage.getItem('crawler_job_id');
+    jobId = sessionStorage.getItem('crawler_job_id');
   }
   if (jobId && jobId !== 'null') {
     const response = await fetch(`http://localhost:8000/crawler_status?job_id=${jobId}`);
@@ -411,13 +441,13 @@ onMount(async () => {
         crawling = false;
         displayingResults = true;
         if (isBrowser()) {
-          localStorage.removeItem('crawler_job_id');
+          sessionStorage.removeItem('crawler_job_id');
         }
         jobId = null;
       } else {
         // Not started or no results: show params/input form
         if (isBrowser()) {
-          localStorage.removeItem('crawler_job_id');
+          sessionStorage.removeItem('crawler_job_id');
         }
         jobId = null;
         acceptingParams = true;
@@ -428,7 +458,7 @@ onMount(async () => {
     } else {
       // On error, also show params/input form
       if (isBrowser()) {
-        localStorage.removeItem('crawler_job_id');
+        sessionStorage.removeItem('crawler_job_id');
       }
       jobId = null;
       acceptingParams = true;
