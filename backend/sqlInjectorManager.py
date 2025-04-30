@@ -1,11 +1,18 @@
 import requests
+import os
+import json
+
 
 class SQLInjectionManager:
+    
     def __init__(self):
         pass  # You'll later add things like logging or Neo4j
+        
 
     def perform_sql_injection(self, target_url, port, timeout=5, headers=None, enum_level=0):
         print(f"[SQLInjection] Starting test on {target_url}:{port}")
+        self.output_dir = "outputs_sql"
+        self.output_file = os.path.join(self.output_dir, "sql_results.json")
         if headers is None:
             headers = {}
 
@@ -53,6 +60,32 @@ class SQLInjectionManager:
 
         if output["vulnerable"] and enum_level > 0:
             output["tables"] = self._enumerate_db(target_url, port, timeout, headers)
+            
+        # Ensure output directory exists
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        # Load existing JSON results if file exists
+        if os.path.exists(self.output_file):
+            try:
+                with open(self.output_file, "r") as f:
+                    existing_data = json.load(f)
+                    if not isinstance(existing_data, list):
+                        existing_data = [existing_data]
+            except json.JSONDecodeError:
+                existing_data = []
+        else:
+            existing_data = []
+
+        # Append new output
+        existing_data.append(output)
+
+        # Write back to file
+        try:
+            with open(self.output_file, "w") as f:
+                json.dump(existing_data, f, indent=4)
+            print(f"[SQLInjection] Results saved to {self.output_file}")
+        except Exception as e:
+            print(f"[SQLInjection] Failed to save results: {e}")
 
         return output
 

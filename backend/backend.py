@@ -16,6 +16,7 @@ import shutil
 import requests
 import neo4j.time
 import mdp3
+from fastapi.responses import JSONResponse
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
 import csv
@@ -687,7 +688,7 @@ async def sql_inject(req: SQLRequest):
         headers=req.headers,
         enum_level=req.enum_level
     )
-    return results
+    return JSONResponse(content=results)
 
 import mysql.connector  # Make sure you pip install mysql-connector-python
 from fastapi import HTTPException
