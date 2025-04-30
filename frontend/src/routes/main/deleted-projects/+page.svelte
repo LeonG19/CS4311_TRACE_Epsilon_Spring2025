@@ -4,6 +4,7 @@
   let deletedProjects = [];
   let error = null;
   let initials = '';
+  let file;
 
   // Fetch projects on mount
   onMount(async () => {
@@ -59,25 +60,22 @@
 
   // Function to send the specific test data
   async function sendTestData() {
-    const jsonData = {
-      "id": 10101,
-      "url": "https://discord.com",
-      "title": "Discord - Group Chat That\u00e2\u0080\u0099s All Fun & Games",
-      "word_count": 376,
-      "char_count": 3671,
-      "link_count": 50,
-      "error": false
-    };
-
     try {
-      const response = await fetch(`http://localhost:8000/submit_results/Fuzzer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(jsonData)  // Send the fixed JSON data
-      });
-      console.log('Response:', response);
+      const formData = new FormData();
+      const fileInput = document.querySelector('#fileInput'); // Asegúrate de tener un input de archivo en tu HTML
+
+      if (!fileInput.files.length) {
+      throw new Error('No file selected');
+    }
+
+      const file = fileInput.files[0];
+      formData.append('file', file);
+
+      const response = await fetch('http://localhost:8000/submit_txt_results/AI/Hacking_Mexico', {
+      method: 'POST',
+      body: formData // No necesitas headers, fetch los pone automáticamente con FormData
+  });
+      console.log('Response:', formData.getAll('file'));
       if (response.ok) {
         const result = await response.json();
         console.log('Data sent successfully:', result);
@@ -148,6 +146,7 @@
 <!-- Button to send test data -->
 <div class="d-flex justify-content-between align-items-center mt-4">
 <h1>Test Data Sending</h1>
+<input type="file" id="fileInput" accept=".txt" />
 <button class="btn btn-danger" on:click={sendTestData}>
   Send Test Data
 </button>

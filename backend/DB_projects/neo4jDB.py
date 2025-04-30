@@ -18,10 +18,10 @@ class Neo4jInteractive:
     # @returns JSON with format of all analysts or status error JSON
     def create_Analyst(self, Name, role, initials):
         # if we don't have all the parameters necessary to create an analyst we return a json with error status and erorr Message
-        if not all([Name, role, initials]):
+        if not all([Name, role, initials]) and Name.strip() != "":
             return {"status": "failure", "error":"One or more parameters missing"}
         # initial query to create user
-        query="CREATE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+        query="MERGE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
         
         query_find_role = """
         MERGE (r:Role {role: $role})
@@ -135,10 +135,9 @@ class Neo4jInteractive:
                 session.execute_write(
                 lambda tx: tx.run(
                     """
+                    MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
                     SET s.type = $type
-                    WITH s
-                    MATCH (p:Project {name: $project_name})
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -147,8 +146,17 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
+                    if "id" in result and isinstance(result["id"], int):
+                        result["id"] = str(result["id"]) + "_" + run_id
+                    else:
+                        result["id"] = run_id
+                    if "error" in result and isinstance(result["error"], str):
+                        result["error"] = result["error"].lower() == "true"
+
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
+                    print(fields)
+         
                     query = f"CREATE (r:Result {{ {fields} }})"
 
                     try:
@@ -156,8 +164,10 @@ class Neo4jInteractive:
                         session.execute_write(lambda tx: tx.run(query, result))
 
                         session.execute_write(lambda tx: tx.run(
-                            """ MATCH (s:ScanRun {run_id: $run_id}), (r:Result {id: $result_id})
-                            MERGE (s)-[:HAS_RESULT]->(r)""",{"run_id": run_id, "result_id": result["id"]}))
+                            """ MATCH (s:ScanRun {run_id: $run_id})
+                                MATCH (r:Result {id: $result_id})
+                                MERGE (s)-[:HAS_RESULT]->(r)""",
+                                {"run_id": run_id, "result_id": result["id"]}))
                         
                         self.relationship_results(project_name, run_id)
                     except Exception as e:
@@ -173,6 +183,64 @@ class Neo4jInteractive:
                     }
 
         return {"status": "success"}
+    
+    def get_all_results_by_project(self, project_name):
+        query = """
+        MATCH (p {name: $project_name})
+        WHERE EXISTS {
+        MATCH (p)-[:HAS_SCAN]->(sc:ScanRun)
+        WHERE toLower(sc.type) = 'crawler'
+        }
+        MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        MATCH (s)-[:HAS_RESULT]->(r)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            result = session.run(query, project_name=project_name)
+            return [dict(record["r"]) for record in result]
+
+    def get_ai_runs_with_results(self, project_name):
+        with self.driver.session() as session:
+            try:
+                query = """
+                MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+                WHERE toLower(s.type) = 'ai'
+                OPTIONAL MATCH (s)-[:HAS_RESULT]->(r:Result)
+                RETURN s, collect(r) AS results
+                """
+                result = session.run(query, project_name=project_name)
+
+                runs = []
+                for record in result:
+                    scan = dict(record["s"]) 
+                    scan["results"] = [dict(r) for r in record["results"] if r]
+                    runs.append(scan)
+
+                return runs
+                
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to retrieve AI results: {str(e)}"
+                }
+            
+    def delete_ai_results(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        DETACH DELETE r, s
+        RETURN COUNT(r) AS deleted_count
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            deleted_count = result.single()["deleted_count"]
+        
+            if deleted_count > 0:
+                return {"status": "success"}
+            else:
+                return {"status": "failure", "error": "No results found"}
+
+
     
 
     def export_project(self, project_name):
@@ -447,6 +515,19 @@ class Neo4jInteractive:
         with self.driver.session() as session:
             result = session.run(query, initials=analyst_initials)
             return [dict(record["p"]) for record in result]
+
+    def get_results_by_scan(self, project_name, run_id):
+        query = """MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+                RETURN r"""
+
+        with self.driver.session() as session:
+            try:
+                results = session.execute_read(
+                    lambda tx: tx.run(query, project_name=project_name, run_id=run_id).data()
+                )
+                return [dict(record["e"]) for record in results]
+            except Exception as e:
+                return {"status": "failure", "error": str(e)}
 
     
 def is_ip_valid(ip):

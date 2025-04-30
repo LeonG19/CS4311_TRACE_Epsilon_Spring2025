@@ -109,12 +109,23 @@ class ProjectManager:
     def get_folders(self):
         return self.neo4j.get_folders()
     
-    def submit_results(self, json_data, result_type):
-        result = self.neo4j.process_Response(json_data, result_type)
+    def submit_results(self, json_data, result_type, project_name):
+        result = self.neo4j.process_Response(json_data, result_type, project_name)
         return result.get("status") == "success" if isinstance(result, dict) else True
     
     def get_projects_in_folder(self, folder_name):
         return self.neo4j.get_projects_in_folder(folder_name)
+    
+    def get_all_scans(self, project_name):
+        return self.neo4j.get_all_results_by_project(project_name)
+    
+    def get_ai_results(self, project_name):
+        return self.neo4j.get_ai_runs_with_results(project_name)    
+    
+    def delete_ai_results(self, project_name):
+        return self.neo4j.delete_ai_results(project_name)
+        
+    
 
     #doesnt work anymore
     #def get_deleted_projects(self):

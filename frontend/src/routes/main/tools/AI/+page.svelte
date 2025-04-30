@@ -2,6 +2,42 @@
 
   import { preventDefault } from "svelte/legacy";
 
+  import { onDestroy } from 'svelte';
+
+let time = 0; // time in milliseconds
+let displayTime = '0.00';
+let finalTime = '0.00';
+let interval;
+
+function startTimer() {
+  time = 0;
+  clearInterval(interval);
+  interval = setInterval(() => {
+    time += 10;
+    displayTime = (time / 1000).toFixed(2);
+  }, 10);
+}
+
+function stopTimer() {
+  clearInterval(interval);
+}
+
+$: if (generating) {
+  startTimer();
+} else {
+  stopTimer();
+}
+
+$: if (displayingResults) {
+  finalTime = displayTime;
+} else {
+}
+
+onDestroy(() => {
+  clearInterval(interval);
+});
+
+  import {onMount} from "svelte";
   let err = ""
   let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
@@ -20,13 +56,22 @@
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
 
+  let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
+  let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
+  let projectName
   let wordlist;
-
-  let uList;
+  let uDict ={};
+  onMount(async()=>{
+    projectName= sessionStorage.getItem('name');
+    aiParams["projectName"] = projectName
+    console.log("Project Name:", projectName);
+  })
 
   let aiParams = {
-    wordlist : ""
+    wordlist : "",
   }
+
+  let abortController = null;
 
   for(let i = 0; i < usernameInput.length;i++){
     aiParams[usernameInput[i].id] = usernameInput[i].isChecked;
@@ -38,7 +83,7 @@
   }
   console.log("Populated aiParams with Password checkbox...");
 
-  let aiResult = []
+  let aiResult = [];
 
   let acceptingParams = true;
   let generating = false;
@@ -78,8 +123,15 @@
   function regenerateCredentials(){
     displayingResults = false;
     generating = true;
+
+    aiResult = [];
+
+    console.log("Removed previous wordlist results", aiResult)
+
     handleSubmit();
   }
+
+
 
   function saveWordlist(){
     let textContent = "Username,Password\n";
@@ -109,14 +161,9 @@
   async function handleDelete(file){
     console.log(file)
     try {
-      const response = await fetch("http://localhost:8000/delete_userpassword", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({file})
+      const response = await fetch(("http://localhost:8000/delete_AI/"+file), {
+        method: "GET"
       });
-      const data = await response.json();
 
       if(response.ok){
         console.log("Delete Successful")
@@ -126,6 +173,24 @@
       console.error("Error fetching user list:", error);
     }
   }
+
+  async function stopAI() {
+  try {
+    const response = await fetch("http://localhost:8000/stop_AI", {
+      method: "POST"
+    });
+
+    if (response.ok) {
+      console.log("AI generation stopped.");
+    } else {
+      console.error("Failed to stop AI generation:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Error during stopAI request:", error);
+  } finally {
+    generatingToParams(); // Transition UI back to param input
+  }
+}
 
   // Checks that the file is exclusively txt file and updates our file accordingly
   async function handleFile(event) {
@@ -145,16 +210,24 @@
     }
   }
 
+  function handleStop() {
+    console.log("Stop Generation Not implemented")
+    //if (abortController) {
+    //  abortController.abort();
+    //}
+}
+
   async function fetchUserList() {
     try {
-      const response = await fetch("http://localhost:8000/display_userList", {
-        method: "POST",
+      const response = await fetch(("http://localhost:8000/ai_results/" + projectName), {
+        method: "GET",
       });
       const data = await response.json();
 
-      uList = data
+      uDict = data
+      
 
-      console.log("Retrieved wordlist: ", uList)
+      console.log("Retrieved wordlist: ", uDict)
     } catch (error) {
       console.error("Error fetching user list:", error);
     }
@@ -162,7 +235,7 @@
 
   // This is for inputs to be sent to the backend for computation.
   async function handleSubmit() {
-    console.log("Form Submitted");
+    console.log("Form Submitted", aiResult);
 
     const formData = new FormData();
 
@@ -217,7 +290,7 @@
     formData.append("file",file);
 
     try{
-      const response = await fetch("http://localhost:8000/save_userpassword", {
+      const response = await fetch(("http://localhost:8000/submit_txt_results/AI/"+projectName), {
       method: "POST",
       body: formData
       });
@@ -263,6 +336,11 @@
                     <input type={usernameLenInput.type} bind:value={usernameLenInput[usernameLenInput.id]} placeholder={usernameLenInput.example} requirement={usernameLenInput.required} oninput={(e) => dynamicAiParamUpdate(usernameLenInput.id, e.target.value)}/>
                   </label>
 
+                  <label>
+                    {usernameNumInput.label}:
+                    <input type={usernameNumInput.type} bind:value={usernameNumInput[usernameNumInput.id]} placeholder={usernameNumInput.example} requirement={usernameNumInput.required} oninput={(e) => dynamicAiParamUpdate(usernameNumInput.id, e.target.value)}/>
+                  </label>
+
                   </div>
 
                   <div class="column">
@@ -280,6 +358,11 @@
                     <input type={passwordLenInput.type} bind:value={passwordLenInput[passwordLenInput.id]} placeholder={passwordLenInput.example} requirement={passwordLenInput.required} oninput={(e) => dynamicAiParamUpdate(passwordLenInput.id, e.target.value)}/>
                   </label>
 
+                  <label>
+                    {passwordNumInput.label}:
+                    <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}/>
+                  </label>
+
                   </div>
                 </div>
 
@@ -290,15 +373,18 @@
       {/if}
 
       {#if generating}
-          <form style="width: 80%; height: 200px; text-align: center; border: 2px solid #5f5f5f;">
+          <form style="width: 600px; height: 300px; text-align: center; border: 2px solid #5f5f5f;">
             <h2>Generating Credentials...</h2>
-            <button onclick={(e) => {preventDefault(e); stopAI()}} title="Completely Stops AI generation">Stop Generation</button>
+            <h3 class="text-2xl font-bold">Time (seconds):</h3>
+            <h3>{displayTime}</h3>
+            <button onclick={(e) => {preventDefault(e); handleStop()}} title="Completely Stops AI generation">Stop Generation</button>
           </form>
-          <div class="lds-dual-ring" style="padding-left: 0%;"></div>
+          <div class="lds-dual-ring" style="padding-left: 40%;"></div>
       {/if}
 
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
+        <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum"]} Passwords: {aiParams["passNum"]}</h3>
         <div class="results-table">
         <table>
           <thead>
@@ -317,6 +403,7 @@
           </tbody>
         </table>
         <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
+        <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
         <button onclick={(e) => {handleSave()}}>Save Wordlist</button>
       </div>
       {/if}
@@ -332,10 +419,10 @@
             </tr>
           </thead>
           <tbody>
-            {#each uList as file}
+            {#each Object.entries(uDict) as [filename, value]}
               <tr>
-                <td>{file}</td>
-                <td><button id={file} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(file);wordlistToParams()}}>Delete</button></td>
+                <td>{filename}</td>
+                <td><button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(value);wordlistToParams()}}>Delete</button></td>
               </tr>
             {/each}
           </tbody>

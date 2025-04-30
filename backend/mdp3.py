@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 
 
-
+stop_generation = False
 
 
 #Natural Language Processing routine that cleans CSV text 
@@ -64,12 +64,15 @@ def load_urls_from_csv(csv_path: str) -> List[str]:
 class WebScraper:
     # Initialize with list of URLs
     def __init__(self, urls):
+        
         self.urls = urls
 
     # Scrape text content from web pages
     def scrape_pages(self):
         results = []
         for i, url in enumerate(self.urls, 1):
+            if stop_generation:
+                return 
             try:
                 response = requests.get(url, timeout=10)
                 response.raise_for_status()
@@ -240,7 +243,7 @@ class CredentialGeneratorMDP:
 
     
     def stop_generating(self):
-        self.stop_flag = True
+        stop_generation = True
 
     def allowed_username_char(self, ch: str) -> bool:
         # Check if the character is alphabetic and whether letters are allowed
@@ -250,7 +253,7 @@ class CredentialGeneratorMDP:
         if ch.isdigit() and not self.user_include_num:
             return False
         # Check for special characters (a common set could be defined)
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.user_include_sym:
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\".<>?/~`" and not self.user_include_sym:
             return False
         return True
 
@@ -259,7 +262,7 @@ class CredentialGeneratorMDP:
             return False
         if ch.isdigit() and not self.pass_include_num:
             return False
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.pass_include_sym:
+        if ch in "!@#$%^&*()-_=+[]{}|;:'\".<>?/~`" and not self.pass_include_sym:
             return False
         return True
     
@@ -373,7 +376,7 @@ class CredentialGeneratorMDP:
     def enhance_password(self, password: str) -> str:
         enhanced = password.capitalize()
         if self.pass_include_sym:
-            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}{random.randint(0, 9)}"
+            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}"
             
         if self.pass_include_num:
             enhanced = f"{enhanced}{random.randint(0, 9)}"
@@ -384,7 +387,7 @@ class CredentialGeneratorMDP:
         self.build_state_transitions()
         credentials = []
         for _ in range(count):
-            if self.stop_flag:
+            if stop_generation:
                 return
             username, password = self.generate_credential()
             credentials.append((username, password))
