@@ -676,13 +676,31 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 
+project_run_indices: dict[str, dict[str, int]] = {}
+
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
-    data = pm.get_ai_results(project_name)
-    uDict = {}
-    for i, dict in enumerate(data):
-        uDict[("wordlist_"+str(i))] = dict["run_id"]
-    print(uDict) 
+    data = pm.get_ai_results(project_name)     # list of dicts, each with "run_id"
+    # get-or-create the per-project map
+    mapping = project_run_indices.setdefault(project_name, {})
+
+    # figure out which run_ids we actually have this time
+    current_ids = [ str(item["run_id"]) for item in data ]
+
+    # assign new indices to any run_id we haven't seen before
+    #   next_index = 1 + the max of existing indices (or 0 if none)
+    next_index = max(mapping.values(), default=-1) + 1
+    for rid in current_ids:
+        if rid not in mapping:
+            mapping[rid] = next_index
+            next_index += 1
+
+    # now build your output dict, only including run_ids that still exist
+    uDict: dict[str, str] = {}
+    for rid, idx in sorted(mapping.items(), key=lambda kv: kv[1]):
+        if rid in current_ids:
+            uDict[f"wordlist_{idx}"] = rid
+
     return uDict
     
 @app.get("/delete_AI/{scan_id}")
