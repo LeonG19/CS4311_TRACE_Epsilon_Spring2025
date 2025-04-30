@@ -677,7 +677,7 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
-    
+
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
     data = pm.get_ai_results(project_name)
