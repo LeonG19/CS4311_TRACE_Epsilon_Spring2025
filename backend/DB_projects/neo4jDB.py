@@ -200,6 +200,47 @@ class Neo4jInteractive:
             result = session.run(query, project_name=project_name)
             return [dict(record["r"]) for record in result]
 
+    def get_ai_runs_with_results(self, project_name):
+        with self.driver.session() as session:
+            try:
+                query = """
+                MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+                WHERE toLower(s.type) = 'ai'
+                OPTIONAL MATCH (s)-[:HAS_RESULT]->(r:Result)
+                RETURN s, collect(r) AS results
+                """
+                result = session.run(query, project_name=project_name)
+
+                runs = []
+                for record in result:
+                    scan = dict(record["s"]) 
+                    scan["results"] = [dict(r) for r in record["results"] if r]
+                    runs.append(scan)
+
+                return runs
+                
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to retrieve AI results: {str(e)}"
+                }
+            
+    def delete_ai_results(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        DETACH DELETE r, s
+        RETURN COUNT(r) AS deleted_count
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            deleted_count = result.single()["deleted_count"]
+        
+            if deleted_count > 0:
+                return {"status": "success"}
+            else:
+                return {"status": "failure", "error": "No results found"}
+
+
     
 
     def export_project(self, project_name):
