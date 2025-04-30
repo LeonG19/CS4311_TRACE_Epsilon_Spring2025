@@ -1,6 +1,40 @@
 <script>
 
   import { preventDefault } from "svelte/legacy";
+  import { onDestroy } from 'svelte';
+
+  let time = 0; // time in milliseconds
+  let displayTime = '0.00';
+  let finalTime = '0.00';
+  let interval;
+
+  function startTimer() {
+    time = 0;
+    clearInterval(interval);
+    interval = setInterval(() => {
+      time += 10;
+      displayTime = (time / 1000).toFixed(2);
+    }, 10);
+  }
+
+  function stopTimer() {
+    clearInterval(interval);
+  }
+
+  $: if (generating) {
+    startTimer();
+  } else {
+    stopTimer();
+  }
+
+  $: if (displayingResults) {
+    finalTime = displayTime;
+  } else {
+  }
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
 
   import {onMount} from "svelte";
   let err = ""
@@ -21,6 +55,9 @@
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let projectName
+  let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
+  let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
+
   let wordlist;
   let uDict ={};
   onMount(async()=>{
@@ -298,6 +335,11 @@
                     <input type={usernameLenInput.type} bind:value={usernameLenInput[usernameLenInput.id]} placeholder={usernameLenInput.example} requirement={usernameLenInput.required} oninput={(e) => dynamicAiParamUpdate(usernameLenInput.id, e.target.value)}/>
                   </label>
 
+                  <label>
+                    {usernameNumInput.label}:
+                    <input type={usernameNumInput.type} bind:value={usernameNumInput[usernameNumInput.id]} placeholder={usernameNumInput.example} requirement={usernameNumInput.required} oninput={(e) => dynamicAiParamUpdate(usernameNumInput.id, e.target.value)}/>
+                  </label>
+
                   </div>
 
                   <div class="column">
@@ -315,6 +357,11 @@
                     <input type={passwordLenInput.type} bind:value={passwordLenInput[passwordLenInput.id]} placeholder={passwordLenInput.example} requirement={passwordLenInput.required} oninput={(e) => dynamicAiParamUpdate(passwordLenInput.id, e.target.value)}/>
                   </label>
 
+                  <label>
+                    {passwordNumInput.label}:
+                    <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}/>
+                  </label>
+
                   </div>
                 </div>
 
@@ -325,8 +372,10 @@
       {/if}
 
       {#if generating}
-          <form style="width: 80%; height: 200px; text-align: center; border: 2px solid #5f5f5f;">
+          <form style="width: 600px; height: 300px; text-align: center; border: 2px solid #5f5f5f;">
             <h2>Generating Credentials...</h2>
+            <h3 class="text-2xl font-bold">Time (seconds):</h3>
+            <h3>{displayTime}</h3>
             <button onclick={(e) => {preventDefault(e); handleStop()}} title="Completely Stops AI generation">Stop Generation</button>
           </form>
           <div class="lds-dual-ring" style="padding-left: 40%;"></div>
@@ -334,6 +383,7 @@
 
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
+        <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum"]} Passwords: {aiParams["passNum"]}</h3>
         <div class="results-table">
         <table>
           <thead>
