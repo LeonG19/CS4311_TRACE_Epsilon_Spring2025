@@ -18,10 +18,10 @@ class Neo4jInteractive:
     # @returns JSON with format of all analysts or status error JSON
     def create_Analyst(self, Name, role, initials):
         # if we don't have all the parameters necessary to create an analyst we return a json with error status and erorr Message
-        if not all([Name, role, initials]):
+        if not all([Name, role, initials]) and Name.strip() != "":
             return {"status": "failure", "error":"One or more parameters missing"}
         # initial query to create user
-        query="CREATE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+        query="MERGE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
         
         query_find_role = """
         MERGE (r:Role {role: $role})
@@ -146,12 +146,16 @@ class Neo4jInteractive:
                 
                 for result in results:
                     result["type"] = result_type
-                    result["id"]= str(result["id"])+"_"+run_id
+                    if "id" in result and isinstance(result["id"], int):
+                        result["id"] = str(result["id"]) + "_" + run_id
+                    else:
+                        result["id"] = run_id
                     if "error" in result and isinstance(result["error"], str):
                         result["error"] = result["error"].lower() == "true"
 
 
                     fields = ", ".join([f"{key}: ${key}" for key in result])
+                    print(fields)
          
                     query = f"CREATE (r:Result {{ {fields} }})"
 
