@@ -55,17 +55,10 @@ onDestroy(() => {
 
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
-<<<<<<< HEAD
-  let projectName
-  let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
-  let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
-
-=======
 
   let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
   let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
   let projectName
->>>>>>> fc246d6557573157627049ffbf49524d02bd20b8
   let wordlist;
   let uDict ={};
   onMount(async()=>{
