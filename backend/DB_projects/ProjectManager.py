@@ -15,38 +15,17 @@ class ProjectManager:
     #        result = session.run(query, **params)
     #        return list(result)  # Consume the result into a list within the session
 
-    def create_project(self, project_name, is_locked, description, machine_IP, status, lead_analyst_initials, files):
+    def create_project(self, project_name, start_date, end_date, description, lead_analyst_initials, files):
         # Convert files to list if it's a string
         if isinstance(files, str):
             files = [] if files == "" else [files]  # Empty string becomes empty list, otherwise a single-item list
 
         # Create the Project node
-        self.neo4j.create_project(project_name, is_locked, description, machine_IP, status, files)
+        self.neo4j.create_project(project_name, start_date, end_date, description, files)
 
         # Create the OWNS relationship
         self.neo4j.add_ownership(lead_analyst_initials, project_name)
 
-        
-    #no longer using the Project class anymore (at least not atm)
-    #def import_project(self, project_data):
-    #    project = Project(
-    #        project_data["project_name"],
-    #        project_data["start_date"],
-    #        project_data["time"],
-    #        project_data["lead_analyst_initials"],
-    #        project_data.get("description", ""),
-    #        project_data.get("file_paths", []),
-    #        project_data.get("is_locked", False),
-    #        project_data.get("status", "active"),
-    #        project_data.get("created_date"),
-    #        project_data.get("last_edit_date"),
-    #        project_data.get("folder_path")
-    #    )
-    #    self.create_project(
-    #        project.project_name, project.start_date, project.time, 
-    #        project.lead_analyst_initials, project.description, project.file_paths
-    #    )
-    #    return project
 
     def delete_project(self, project_name):
         result = self.neo4j.delete_project(project_name)
