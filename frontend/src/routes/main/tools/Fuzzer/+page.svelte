@@ -1,6 +1,7 @@
 <script>
   import { preventDefault } from "svelte/legacy";
-
+  import {onMount} from "svelte";
+  
   // Input conf
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", required: true };
   let fuzzerInput = [
@@ -25,7 +26,9 @@
   let activeController = null;
   let popoutWindow = null;
   let terminalOutput = [];
-  
+
+  let projectName = "";
+
   // Progress tracking
   let progress = 0;
   let processedRequests = 0;
@@ -40,8 +43,45 @@
   let pauseAvailable = true;
   let resumeAvailable = false;
   
+  
   // Sorting configuration
   let sortConfig = { column: "", direction: 'asc' };
+
+
+// onMount(() => {
+//   // for test:
+//   projectName = "Mayra_Demo";
+//   console.log("Project Name:", projectName);
+//   // **THIS** is what actually sticks it into the payload:
+//   fuzzerParams.project_name = projectName;
+// });
+onMount(() => {
+  projectName = sessionStorage.getItem('name');
+  console.log("Project Name:", projectName);
+  fuzzerParams.project_name = projectName;
+});
+
+
+  async function submitFuzzerResultsToProject() {
+    try {
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/fuzzer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ results }),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`Saved ${body.inserted} results for ${projectName}`);
+      } else {
+        console.error("Save failed:", body.detail || body.error);
+      }
+    } catch (e) {
+      console.error("Network error on submit:", e);
+    }
+  }
 
   // Navigation functions
   function goBack() { window.location.href = "/main/tools"; }
@@ -431,6 +471,8 @@
         
         if (done) {
           stopTimer();
+          await submitFuzzerResultsToProject();//SUBMITTFUZZRESULTS TO DB !!!
+
           break;
         }
         
@@ -472,6 +514,10 @@
         addToTerminal(`ERROR: ${error.message}`, 'error');
       }
       stopTimer();
+      if (done){
+        await submitFuzzerResultsToProject();
+        
+      }
     }
   }
 </script>

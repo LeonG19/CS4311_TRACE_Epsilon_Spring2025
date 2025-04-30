@@ -34,6 +34,12 @@ logger = logging.getLogger("asyncio")
 # creates endpoints
 app = FastAPI(title="Routes")
 
+# Global instances
+crawler = None
+fuzzer = None
+brute_forcer = None
+pm = ProjectManager(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+
 class ProxyRequest(BaseModel):
     url: str
     method: str = "GET"
@@ -120,6 +126,8 @@ async def resumeCrawl():
         return {"message" :" Crawler Resumed"}
     return {"message": "nothing to resume"}
 
+
+
 # Add fuzzer request model --- FUZZER
 class FuzzRequest(BaseModel):
     target_url: str
@@ -131,8 +139,7 @@ class FuzzRequest(BaseModel):
     filter_by_content_length: Optional[str | int] = ''
     proxy: str = ''
     additional_parameters: Optional[str] = ''
-    show_results: bool = True  # parameter for toggling result visibility
-    project_name: Optional[str] = None  # database project name
+    show_results: bool = True  # New parameter for toggling result visibility
 
 # Global fuzzer instance to control across endpoints
 fuzzer = None
@@ -150,7 +157,7 @@ async def launchFuzz(request: FuzzRequest):
             async for update in fuzzer.run_scan(params_dict):
                 yield json.dumps(update) + "\n"
         except Exception as e:
-            logger.error(f"Error: {e}", exc_info=True)
+            logger.error(f"Error in fuzz stream: {e}", exc_info=True)
     
     
     return StreamingResponse(fuzz_stream(), media_type="application/json")
@@ -618,14 +625,25 @@ async def export_project(projectName: str):
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 @app.post("/submit_results/{result_type}/{project_name}")
-async def submit_results(result_type, project_name , request: Request):
-    if not [result_type,project_name]:
-        return {"status": "failure", "error": "Missing result_type or project_name"}
+async def submit_results(
+    request: Request,
+    result_type: str,
+    project_name: str
+):
     try:
-        test_data = await request.json()
-        pm.submit_results(test_data, result_type, project_name)
+        body = await request.json()
+        results = body.get("results")
+        if not isinstance(results, list):
+            raise HTTPException(status_code=400, detail="`results` must be a list")
+
+        pm.submit_results(results, result_type, project_name)
+        return {"status": "success", "inserted": len(results)}
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
+        logger.error("Error saving results", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Submission failed: {e}")
 
 @app.post("/submit_txt_results/{result_type}/{project_name}")
 async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
@@ -741,6 +759,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 ##
 ## TEAM 6 PART

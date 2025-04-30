@@ -6,14 +6,15 @@ from collections import deque
 import logging
 import os
 import asyncio
-import uuid# need for db
 
-# Configure  fuzzer logging
+from http_tester import send_http_request
+
+# Configure fuzzer logging
 logging.basicConfig(level=logging.INFO)
 scan_logger = logging.getLogger(__name__)
 
 class Fuzzer:
-    def __init__(self, output_filename='outputs_fuzzer/fuzz_results.json'):#place json file inside outputs folder
+    def __init__(self, json_filename='fuzz_results.json'):
         self.scan_target = ''
         self.payloads = []
         self.auth_cookies = {}
@@ -24,21 +25,17 @@ class Fuzzer:
         self.network_proxy = ''
         self.custom_params = {}
         self.display_results_live = False
-        self.project_name = None
-        
         # Runtime data
         self.total_scan_time = 0.0
         self.rate_of_requests = 0.0
         self.scan_report = []
-        self.report_file = output_filename
+        self.json_filename = json_filename  # Changed to match crawler style
         self.number_of_payloads = 0
-        self.is_running = True
-        self.is_paused = False
-        
-        # Create output directory if it doesn't exist
-        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+        # Control flags for pause and stop functionality
+        self.stop_flag = False
+        self.pause_flag = False
 
-    def parse_auth_cookies(self, cookie_string):#parsing  cookie string in dictionary
+    def parse_auth_cookies(self, cookie_string):
         if not cookie_string:
             return {}
 
@@ -48,66 +45,86 @@ class Fuzzer:
                 key, value = item.strip().split('=', 1)
                 cookies[key] = value
         return cookies
-#using request to test fuzzer functionality
-    def send_request(self, url, payload, method):#Send request with payload and return response details
+    
+    def send_request(self, url, payload, method):
         try:
-            headers = {'User-Agent': 'TRACE Fuzzer 1.0'}
-            if not url.startswith(('http://', 'https://')):#check URL 
-                url = 'https://' + url
+            # Ensure URL has proper format
+            if not url.startswith(('http://', 'https://')):
+                url = 'http://' + url  # Changed to http as the external client uses port 80
+                
+            # Construct the URL with the payload
             if method == 'GET':
-            
                 if 'FUZZ' in url:
                     fuzz_url = url.replace('FUZZ', payload)
                 else:
                     separator = '&' if '?' in url else '?'
                     fuzz_url = f"{url}{separator}fuzz={payload}"
-                response = requests.get(
-                    fuzz_url,
-                    cookies=self.auth_cookies,
-                    proxies={'http': self.network_proxy, 'https': self.network_proxy} if self.network_proxy else None,
-                    timeout=5,
-                    headers=headers
-                )
-
-            elif method == 'POST':
-                data = {param: payload for param in self.custom_params} if self.custom_params else {'fuzz': payload}
-                response = requests.post(
-                    url,
-                    data=data,
-                    cookies=self.auth_cookies,
-                    proxies={'http': self.network_proxy, 'https': self.network_proxy} if self.network_proxy else None,
-                    timeout=5,
-                    headers=headers
-                )
-
-            elif method == 'PUT':
-                data = {param: payload for param in self.custom_params} if self.custom_params else {'fuzz': payload}
-                response = requests.put(
-                    url,
-                    data=data,
-                    cookies=self.auth_cookies,
-                    proxies={'http': self.network_proxy, 'https': self.network_proxy} if self.network_proxy else None,
-                    timeout=5,
-                    headers=headers
-                )
-
-            content = response.text
+            else:
+                fuzz_url = url
+                
+            # Prepare headers
+            headers = {'User-Agent': 'TRACE Fuzzer 1.0'}
+            
+            # Prepare cookies if needed
+            if self.auth_cookies:
+                headers['Cookie'] = "; ".join([f"{k}={v}" for k, v in self.auth_cookies.items()])
+                
+            # For POST/PUT, prepare the body
+            body = None
+            if method in ['POST', 'PUT']:
+                if self.custom_params:
+                    # Format as form data
+                    body = "&".join([f"{param}={payload}" for param in self.custom_params])
+                else:
+                    body = f"fuzz={payload}"
+                    
+            # Call HTTP client
+            response_data = send_http_request(
+                url=fuzz_url, 
+                method=method,
+                headers=headers,
+                body=body
+            )
+            
+            # Parse the response based on its format
+            if isinstance(response_data, dict):
+                status_code = response_data.get("status_code", 0)
+                content = response_data.get("body", "")
+            else:
+                status_code = 200  # Default
+                content = response_data
+                
+                # Extract status code from raw HTTP response
+                if isinstance(content, str) and "HTTP/" in content:
+                    status_line = content.split('\n')[0]
+                    try:
+                        status_code = int(status_line.split()[1])
+                    except (IndexError, ValueError) as e:
+                        scan_logger.warning(f"Could not parse status code: {e}")
+                
+                # Extract body from raw HTTP response
+                if isinstance(content, str) and "\r\n\r\n" in content:
+                    content = content.split("\r\n\r\n", 1)[1]
+                    
+            # Process response content
             lines = content.count('\n')
             words = len(content.split())
             chars = len(content)
-
+            
             return {
-                'status_code': response.status_code,
+                'url_used': fuzz_url,
+                'status_code': status_code,
                 'lines': lines,
                 'words': words,
                 'chars': chars,
-                'length': len(response.content),
+                'length': len(content.encode('utf-8', errors='ignore')),
                 'error': False
             }
-
-        except requests.RequestException as e:
-            scan_logger.error(f"Req error: {e}")
+            
+        except Exception as e:
+            scan_logger.error(f"Request error: {e}")
             return {
+                'url_used': url if 'fuzz_url' not in locals() else fuzz_url,
                 'status_code': 0,
                 'lines': 0,
                 'words': 0,
@@ -116,7 +133,7 @@ class Fuzzer:
                 'error': True
             }
 
-    def display_fuzzer_results(self, result):#check status then display 
+    def display_fuzzer_results(self, result):
         if self.exclude_status_codes and result['status_code'] in self.exclude_status_codes:
             return False
 
@@ -124,170 +141,133 @@ class Fuzzer:
             return False
         if self.content_length_filter is not None:
             if result['length'] != self.content_length_filter:
-                
                 return False
         return True
 
-    def save_report_to_json(self):#Save results to JSON file for now . might have to be CSV
+    # New method to replace save_report_to_json
+    def save_json(self):
         try:
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(self.report_file), exist_ok=True)
+            file_path = os.path.join("outputs_fuzzer", self.json_filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             
-            with open(self.report_file, 'w') as json_file:
-                json.dump(self.scan_report, json_file, indent=4)
-                
-            scan_logger.info(f"Successfully saved results to {self.report_file}")
-            return True
+            with open(file_path, 'w') as json_file:
+                fuzz_data = []
+                for index, entry in enumerate(self.scan_report, start=1):
+                    # Format entries to match crawler structure for consistency in database
+                    fuzz_data.append({
+                        'id': index,
+                        'url': entry['url'],
+                        'title': f"Payload: {entry['payload']}",  # Use payload as title
+                        'word_count': entry['words'],
+                        'char_count': entry['chars'],
+                        'link_count': 0,  # Not applicable for fuzzer
+                        'error': entry['error'],
+                        'severity': self.calculate_severity(entry['response'])
+                    })
+                json.dump(fuzz_data, json_file, indent=4)
+            scan_logger.info(f"Results saved to {file_path}")
         except Exception as e:
-            scan_logger.error(f"Error saving as JSON file: {e}")
-            return False
-            
+            scan_logger.error(f"Error saving JSON: {e}")
+
+    def calculate_severity(self, status):
+        # Match crawler's severity calculation for consistency
+        if status < 100 or status >= 600:
+            return "Unknown"
+        elif status >= 100 and status < 200:
+            return "Info"
+        elif status >= 200 and status < 300:
+            return "Low"
+        elif status >= 300 and status < 400:
+            return "Medium"
+        else:
+            return "High"
+
+    # Control methods
     def stop_scan(self):
-        self.is_running = False
-        scan_logger.info("Scan stopping requested")
+        scan_logger.info("Stopping scan requested")
+        self.stop_flag = True
 
     def pause_scan(self):
-        self.is_paused = True
-        scan_logger.info("Scan paused")
+        scan_logger.info("Pausing scan requested")
+        self.pause_flag = True
 
     def resume_scan(self):
-        self.is_paused = False
-        scan_logger.info("Scan resumed")
-        
-    async def submit_to_database(self):#send to db
-        if not self.project_name:
-            scan_logger.warning("No project name ")
-            return False
-            
-        try:
-            # Preparget the data type for submission to the project database
-            for entry in self.scan_report:
-                if 'type' not in entry:
-                    entry['type'] = 'fuzzer'
-                    
-            # Submit data to database endpoint
-            api_url = f"/submit_results/fuzzer/{self.project_name}"
-            
-            headers = {'Content-Type': 'application/json'}
-            
-            try:
-                response = requests.post(
-                    api_url,
-                    json=self.scan_report,
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    scan_logger.info(f"Success: {self.project_name}")
-                    return True
-                else:
-                    scan_logger.error(f"Failed: {response.status_code}")
-                    scan_logger.error(f"Response: {response.text}")
-                    return False
-                    
-            except Exception as e:
-                scan_logger.error(f"Error: {e}")
-                return False
-                
-        except Exception as e:
-            scan_logger.error(f"Error {e}")
-            return False
+        scan_logger.info("Resuming scan requested")
+        self.pause_flag = False
 
-    async def run_scan(self, scan_parameters):#start fuzzer with user inputs params
+    async def run_scan(self, scan_parameters):
         self.configure_scan_parameters(scan_parameters)
-        if not self.payloads:# if empty this will be default 
+        if not self.payloads:
             self.payloads = ['test', 'admin', 'password', '123456']
         self.number_of_payloads = len(self.payloads)
-        self.is_running = True
-        self.is_paused = False
         
-        # Get project name from parameters if available
-        self.project_name = scan_parameters.get('project_name')
+        # Reset control flags at the start of a new scan
+        self.stop_flag = False
+        self.pause_flag = False
 
         start = time.time()
         processed_requests = 0
         filtered_requests = 0
 
         for i, payload in enumerate(self.payloads):
-            # Check if scan should stop
-            if not self.is_running:
-                scan_logger.info("Scan stopped by user")
+            # Check if stop was requested
+            if self.stop_flag:
+                scan_logger.info("Scan stopped by user request")
                 break
-                
-            # Check if scan is paused
-            while self.is_paused:
-                await asyncio.sleep(0.5)  # Sleep while paused
-                if not self.is_running:  # Allow stopping while paused
+            # Check if pause was requested and wait if needed
+            await asyncio.sleep(0.1)  # Small delay to prevent busy waiting
+            while self.pause_flag:
+                await asyncio.sleep(0.5)  # Wait while paused
+                if self.stop_flag:  # Check if stop was requested while paused
                     break
-                    
+
             result = self.send_request(self.scan_target, payload, self.request_method)
             processed_requests += 1
 
-            result_entry = {# Add payload and result info
+            result_entry = {
                 'id': i + 1,
+                'url': result['url_used'],
                 'response': result['status_code'],
                 'lines': result['lines'],
                 'words': result['words'],
                 'chars': result['chars'],
                 'payload': payload,
                 'length': result['length'],
-                'error': result['error'],
-                'url': self.scan_target  # Add URL for database context
+                'error': result['error']
             }
 
             if self.display_fuzzer_results(result):
                 self.scan_report.append(result_entry)
                 filtered_requests += 1
 
-            # calc progress and also the stats
+            # Calculate progress and stats
             elapsed = time.time() - start
             requests_per_second = processed_requests / elapsed if elapsed > 0 else 0
 
-            # Create the update object to yield this.
+            # Create the update object to yield
             update = {
                 "progress": (i + 1) / self.number_of_payloads,
                 "processed_requests": processed_requests,
                 "filtered_requests": filtered_requests,
                 "requests_per_second": round(requests_per_second, 2)
             }
-            if self.display_results_live:#reuslts display must be true then display
+            if self.display_results_live:
                 update.update(result_entry)
 
             yield update
 
         if not self.display_results_live:
             for result in self.scan_report:
-                yield result#sent resutls 
+                yield result
 
         end = time.time()
         self.total_scan_time = end - start
         self.rate_of_requests = round(processed_requests / self.total_scan_time, 2) if self.total_scan_time > 0 else 0
-        
-        # Save results to JSON file
-        saved = self.save_report_to_json()
-        if saved:
-            scan_logger.info(f"Scan completed in {self.total_scan_time:.2f} seconds. Results saved to {self.report_file}")
-            
-            # If project name is provided, submit to database
-            if self.project_name:
-                try:
-                    db_success = await self.submit_to_database()
-                    if db_success:
-                        yield {"status": "success", "message": f"Results submitted to project: {self.project_name}"}
-                    else:
-                        yield {"status": "warning", "message": "Failed to submit results to database"}
-                except Exception as e:
-                    scan_logger.error(f"Error submitting to database: {e}")
-                    yield {"status": "error", "message": f"Database error: {str(e)}"}
-        else:
-            scan_logger.error("Failed to save scan results")
-            yield {"status": "error", "message": "Failed to save scan results"}
+        # Use the new method to save results in crawler-compatible format
+        self.save_json()
 
     def configure_scan_parameters(self, scan_params):
         self.scan_target = scan_params.get('target_url', '')
-        
-        # Get project name if available
-        self.project_name = scan_params.get('project_name')
 
         # Handling word list possibilities - file path, list of strings, or comma-separated string
         if 'word_list' in scan_params and scan_params['word_list']:
