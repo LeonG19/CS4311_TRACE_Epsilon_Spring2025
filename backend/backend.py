@@ -362,12 +362,13 @@ class FilenameInput(BaseModel):
     filename: str
 
 @app.post("/delete_userpassword")
-async def delete_userpassword(data: FilenameInput):
+async def delete_userpassword(data: str = Form(...)):
     
-    filename = data.filename
+    filename = data.strip('"\'')
     print(f"Got filename: {filename}")
 
-    for root, dirs, files in os.walk("/user_passwords_uploads"):
+    for root, dirs, files in os.walk("./user_passwords_uploads"):
+        print(files)
         if filename in files:
             file_path = os.path.join(root, filename)
             os.remove(file_path)

@@ -109,12 +109,11 @@
   async function handleDelete(file){
     console.log(file)
     try {
+      const formData = new FormData();
+      formData.append('data', JSON.stringify(file));
       const response = await fetch("http://localhost:8000/delete_userpassword", {
         method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify({file})
+        body: formData
       });
       const data = await response.json();
 
@@ -126,6 +125,24 @@
       console.error("Error fetching user list:", error);
     }
   }
+
+  async function stopAI() {
+  try {
+    const response = await fetch("http://localhost:8000/stop_AI", {
+      method: "POST"
+    });
+
+    if (response.ok) {
+      console.log("AI generation stopped.");
+    } else {
+      console.error("Failed to stop AI generation:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Error during stopAI request:", error);
+  } finally {
+    generatingToParams(); // Transition UI back to param input
+  }
+}
 
   // Checks that the file is exclusively txt file and updates our file accordingly
   async function handleFile(event) {
