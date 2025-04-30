@@ -16,7 +16,7 @@
       { name: 'Tools', icon: 'fas fa-wrench', route: '/main/tools', title: 'Navigates back to the Tools Page' },
       { name: 'Tree Graph', icon: 'fas fa-tree', route: '/main/tools/TreeList', title: 'Navigates to the Tree Graph Page' },
       { name: 'AI Credential Generator', icon: 'fas fa-brain', route: '/main/tools/AI', title: 'Navigates to the AI Credential Generator Page' },
-      { name: 'DB Enumerator', icon: 'fas fa-database', route: '/main/tools/DBEnum', title: 'Navigates to the DB Enumerator Upload Page' } 
+      { name: 'DB Enumerator', icon: 'fas fa-database', route: '/main/tools/DBEnumerator', title: 'Navigates to the DB Enumerator Upload Page' } 
   ];
 
   // Dynamically choose the sidebar items based on the route
