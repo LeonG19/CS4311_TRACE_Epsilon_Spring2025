@@ -694,13 +694,12 @@ async def unlock_project(projectName: str, analyst_initials:str):
 
 @app.post("/create/")
 async def create_project(project_name: str = Form(...),
+    start_date: str = Form(...),
+    end_date: str = Form(...),
     description: str = Form(...),
-    machine_IP: str = Form(...),
-    status: str = Form(...),
     lead_analyst_initials: str = Form(...),
-    locked: str = Form(...),
     files: list[UploadFile] = File(default=[])):
-    result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
+    result=pm.create_project(project_name, start_date, end_date, description, lead_analyst_initials, files)
     return {"status": "success"}
 
 @app.get("/getResult/{projectName}")
