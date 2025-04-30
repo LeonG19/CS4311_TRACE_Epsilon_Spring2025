@@ -780,7 +780,7 @@
     background-color: #2563eb;
   }
 
-  .terminal-overlay {
+  /* .terminal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.7);
@@ -810,7 +810,7 @@
     font-family: monospace;
     white-space: pre-wrap;
     word-break: break-word;
-  }
+  } */
 
   /* Button styling */
   .home-button {
