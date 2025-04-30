@@ -485,6 +485,7 @@
     }
   }
 
+  // this is where we pass the file to db
   async function submitResultsToBackend(resultType = "bruteforcer") {
     try {
       // Convert `results` to a Blob and create a FormData object
