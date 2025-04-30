@@ -291,6 +291,7 @@
         showResultsButton = true;
         stopTimer();
         runningToResults(); // << This line was missing
+        await submitResultsToBackend(); // <-- file + result_type in URL
         break;
         }
 
@@ -483,6 +484,32 @@
       popoutWindow.addTerminalLine(formattedLine, type);
     }
   }
+
+  async function submitResultsToBackend(resultType = "bruteforcer") {
+    try {
+      // Convert `results` to a Blob and create a FormData object
+      const blob = new Blob([JSON.stringify(results)], { type: 'application/json' });
+      const formData = new FormData();
+      formData.append("file", blob, `${resultType}_results.json`);
+
+      // Send it to the endpoint
+      const response = await fetch(`http://localhost:8000/submit_results/${resultType}`, {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        addToTerminal(`Results submitted successfully: ${result.status || 'success'}`, 'success');
+      } else {
+        addToTerminal(`Server responded with error: ${result.error || 'unknown error'}`, 'error');
+      }
+    } catch (err) {
+      addToTerminal(`Submission failed: ${err.message}`, 'error');
+    }
+  }
+
 </script>
 
 <div class="bruteForceConfigPage">

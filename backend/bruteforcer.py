@@ -7,6 +7,8 @@ from http_tester import send_http_request  # Importing from http_tester.py
 from proxy_logic import handle_proxy_request  # Importing from proxy_logic.py
 import asyncio
 
+# attempting to fix db integration
+import functools  
 import requests
 
 
@@ -208,15 +210,6 @@ class BruteForcer:
         end = time.time()
         self.total_scan_time = end - start
         self.save_report_to_json() #after saving json file theoretically we should upload the brute force result
-
-        # Send the saved JSON file to the FastAPI endpoint i believe
-        try:
-            with open(self.report_file, 'rb') as f:
-                files = {'file': (os.path.basename(self.report_file), f, 'application/json')}
-                data = {'type': 'bruteforcer'}
-                response = requests.post("http://127.0.0.1:8000/save_results_to_db", files=files, data=data)
-        except Exception as e:
-            print("Failed to send results to DB:", e)
 
     def configure_scan_parameters(self, scan_params):
         """Configure scan parameters from user input."""
