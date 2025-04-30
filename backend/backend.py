@@ -761,3 +761,25 @@ async def create_initials(initials:str, type:int):
     result=n4ji.create_Analyst(" ", role, initials) 
     
     return result
+
+# trying to fix the db not receiving this is for bruteforcer
+@app.post("/submit_results/{result_type}/{project_name}")
+async def submit_results(
+    request: Request,
+    result_type: str,
+    project_name: str
+):
+    try:
+        body = await request.json()
+        results = body.get("results")
+        if not isinstance(results, list):
+            raise HTTPException(status_code=400, detail="`results` must be a list")
+ 
+        pm.submit_results(results, result_type, project_name)
+        return {"status": "success", "inserted": len(results)}
+ 
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error saving results", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Submission failed: {e}")

@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import { preventDefault } from "svelte/legacy";
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true };
 
@@ -46,6 +47,8 @@
   let pauseAvailable = true;
   let resumeAvailable = false;
   
+  //database project name for path
+  let projectName = ""; // to store the project name
 
   //applying crawler sorter i added over there to here
   let sortConfig = {
@@ -239,18 +242,20 @@
   // inputs to be sent to the backend for brute-forcing
   async function handleSubmit() {
     console.log("handleSubmit called");
+    
+    // Validation checks for required fields
     if (!bruteForceParams.target_url) {
       alert('Target URL is required');
       return;
     }
-    
+
     if (!fileUploaded && !bruteForceParams.word_list) {
       alert('Please upload a wordlist file first');
       return;
     }
 
-    console.log("Brute force parameters before fetch:", bruteForceParams); // <--- ADD THIS
-    
+    console.log("Brute force parameters before fetch:", bruteForceParams); // Debugging log
+
     // Reset state
     paramsToRunning();
     resetTimer();
@@ -264,10 +269,11 @@
     pauseAvailable = true;
     resumeAvailable = false;
 
-    //abort
+    // Abort previous request if any
     activeController = new AbortController();
 
     try {
+      // Send the brute-force request
       const response = await fetch('http://localhost:8000/bruteforcer', {
         method: 'POST',
         headers: {
@@ -277,10 +283,12 @@
         signal: activeController.signal
       });
 
+      // Handle non-OK responses
       if (!response.ok) {
         throw new Error(`Brute force request failed: ${response.status}`);
       }
 
+      // Read the response in chunks
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
@@ -288,11 +296,14 @@
         const { done, value } = await reader.read();
 
         if (done) {
-        showResultsButton = true;
-        stopTimer();
-        runningToResults(); // << This line was missing
-        await submitResultsToBackend(); // <-- file + result_type in URL
-        break;
+          // Show results button after completion
+          showResultsButton = true;
+          stopTimer();
+          runningToResults(); // Transition to results page
+
+          // Submit the brute-force results to the project
+          await submitbruteResultsToProject(); // Submit results after brute force finishes
+          break;
         }
 
         const chunk = decoder.decode(value);
@@ -300,8 +311,11 @@
 
         for (const line of lines) {
           try {
+            // Parse each line of response data
             const update = JSON.parse(line);
-            console.log('Received update:', update); //debugging missing table entries
+            console.log('Received update:', update); // Debugging missing table entries
+
+            // Update progress and stats
             if (update.progress) {
               progress = update.progress * 100;
             }
@@ -309,18 +323,20 @@
             filteredRequests = update.filtered_requests || filteredRequests;
             requestsPerSecond = update.requests_per_second || requestsPerSecond;
 
+            // Handle payload results and update terminal/log output
             if (update.payload) {
-              // Add to terminal with the full result object
-              addToTerminal(update, '');
-              results = [...results, update];
+              addToTerminal(update, ''); // Update terminal with the result
+              results = [...results, update]; // Add to results array
               logOutput += `[${update.response}] ${update.payload} \t ${update.length} bytes \t ${update.words} words\n`
             }
           } catch (error) {
+            // Handle any parsing errors
             addToTerminal(`ERROR: ${error.message}`, 'error');
           }
         }
       }
     } catch (error) {
+      // Handle any errors during the fetch process
       addToTerminal(`ERROR: ${error.message}`, 'error');
       showResultsButton = true;
       stopTimer();
@@ -485,29 +501,31 @@
     }
   }
 
+  onMount(() => {
+    projectName = "Mayra_Demo"; //hardcoded for testing into db
+    bruteForceParams.project_name = projectName;
+    console.log("Project Name:", projectName);
+  });
+
   // this is where we pass the file to db
-  async function submitResultsToBackend(resultType = "bruteforcer") {
+  async function submitbruteResultsToProject() {
     try {
-      // Convert `results` to a Blob and create a FormData object
-      const blob = new Blob([JSON.stringify(results)], { type: 'application/json' });
-      const formData = new FormData();
-      formData.append("file", blob, `${resultType}_results.json`);
-
-      // Send it to the endpoint
-      const response = await fetch(`http://localhost:8000/submit_results/${resultType}`, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        addToTerminal(`Results submitted successfully: ${result.status || 'success'}`, 'success');
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/bruteforcer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ results }),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`✅ Saved ${body.inserted} results for ${projectName}`);
       } else {
-        addToTerminal(`Server responded with error: ${result.error || 'unknown error'}`, 'error');
+        console.error("Save failed:", body.detail || body.error);
       }
-    } catch (err) {
-      addToTerminal(`Submission failed: ${err.message}`, 'error');
+    } catch (e) {
+      console.error("Network error on submit:", e);
     }
   }
 
