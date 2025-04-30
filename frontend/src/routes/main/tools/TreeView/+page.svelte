@@ -1,207 +1,209 @@
 <script>
-  import { onMount, tick } from 'svelte';
-  import cytoscape from 'cytoscape';
+	import { onMount } from 'svelte';
+	import cytoscape from 'cytoscape';
 
-  let cy;
-  let isLoading = true;
-  let error = '';
+	let cy; //cytosscape, uses webgl by default
+	let container; //dom element reference
+	let treeData = []; //URL entries loaded from sessionStorage
+	let rootLabel = 'ROOT'; //default root domain label
 
-  function formatUrlLabel(url) {
-    try {
-      const parsedUrl = new URL(url);
-      const hostname = parsedUrl.hostname;
-      const pathname = parsedUrl.pathname || '/';
-      return `${hostname}\n${pathname}`;
-    } catch {
-      return url;
-    }
-  }
+	//severity colors
+	const severityColors = {
+		high: '#e74c3c',     // Red
+		medium: '#f39c12',   // Orange
+		low: '#2ecc71',      // Green
+		info: '#95a5a6',     // Gray
+		unknown: '#7f8c8d'   // Dark Gray for undefined/invalid
+	};
 
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/tree-graph');
-      if (!res.ok) throw new Error('Failed to fetch graph data');
+	//used to get color for a given severity
+	function getSeverityColor(severity) {
+		return severityColors[severity?.toLowerCase()] || severityColors.unknown;
+	}
 
-      const data = await res.json();
-      const elements = [];
+	//used if result entry does not have a severity entry but does have a status code entry, matches the logic for crawler
+	function calculateSeverity(status) {
+		if (status < 100 || status >= 600) {
+			return 'unknown';
+		} else if (status >= 100 && status < 200) {
+			return 'info';
+		} else if (status >= 200 && status < 300) {
+			return 'low';
+		} else if (status >= 300 && status < 400) {
+			return 'medium';
+		} else {
+			return 'high';
+		}
+	}
 
-      data.nodes.forEach(node => {
-        elements.push({
-          data: {
-            id: String(node.id),
-            label: formatUrlLabel(node.label),
-            severity: node.color
-          }
-        });
-      });
+	//used to build the node & edge elements from treeData
+	function buildElements(data) {
+		const elements = [];
+		const nodeMap = new Map(); //used to try and avoid duplicate nodes
 
-      data.edges.forEach(edge => {
-        elements.push({
-          data: { source: String(edge.from), target: String(edge.to) }
-        });
-      });
+		data.forEach(node => {
+			try {
+				const fullUrl = new URL(node.url);
+				const hostname = fullUrl.hostname;
+				const segments = fullUrl.pathname.split('/').filter(Boolean);
 
-      isLoading = false;
-      await tick();
+				let path = '';
+				let parentId = hostname;
 
-      const container = document.getElementById('cy');
-      if (!container) {
-        console.error('Cytoscape container not found!');
-        return;
-      }
+				//determine severity based off the status code or severity
+				const severity = node.severity?.toLowerCase() || calculateSeverity(node.status_code);
 
-      cy = cytoscape({
-        container,
-        elements,
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'background-color': 'data(severity)',
-              'label': 'data(label)',
-              'color': '#000',
-              'text-valign': 'center',
-              'text-halign': 'center',
-              'shape': 'roundrectangle',
-              'padding': '10px',
-              'font-size': '10px',
-              'text-wrap': 'wrap',
-              'text-max-width': 80
-            }
-          },
-          {
-            selector: 'edge',
-            style: {
-              'width': 1,
-              'line-color': '#ccc',
-              'target-arrow-shape': 'none'
-            }
-          }
-        ],
-        layout: {
-          name: 'breadthfirst',
-          directed: true,
-          padding: 10,
-          spacingFactor: 1.5
-        }
-      });
+				//where we add the root domain node
+				if (!nodeMap.has(hostname)) {
+					nodeMap.set(hostname, true);
+					elements.push({
+						data: {
+							id: hostname,
+							label: hostname,
+							severity
+						}
+					});
+				}
 
-      window.addEventListener('resize', () => cy.resize());
+				//used to add path nodes and edges
+				for (let i = 0; i < segments.length; i++) {
+					path += '/' + segments[i];
+					const fullPath = `${hostname}${path}`;
+					const label = '/' + segments[i];
 
-      // Optional: show tooltip/alert on node click
-      cy.on('tap', 'node', evt => {
-        const node = evt.target;
-        console.log(`Clicked node: ${node.data().label}`);
-        // alert(`Node: ${node.data().label}`);
-      });
+					if (!nodeMap.has(fullPath)) {
+						nodeMap.set(fullPath, true);
+						elements.push({
+							data: {
+								id: fullPath,
+								label,
+								severity
+							}
+						});
+						elements.push({
+							data: {
+								source: parentId,
+								target: fullPath
+							}
+						});
+					}
 
-    } catch (err) {
-      console.error(err);
-      error = 'Unable to load Tree Graph. Please try again later.';
-      isLoading = false;
-    }
-  });
+					parentId = fullPath;
+				}
+			} catch (err) {
+				console.warn('Invalid URL skipped:', node.url);
+			}
+		});
 
-  function zoomIn() {
-    if (cy) cy.zoom(cy.zoom() + 0.2);
-  }
+		return elements;
+	}
 
-  function zoomOut() {
-    if (cy) cy.zoom(cy.zoom() - 0.2);
-  }
+	//all the zoom controls that are needed per the SRS
+	function resetZoom() {
+		if (cy) cy.fit();
+	}
 
-  function resetView() {
-    if (cy) {
-      cy.fit();
-      cy.center();
-    }
-  }
+	function zoomIn() {
+		if (cy) cy.zoom(cy.zoom() * 1.2);
+	}
+
+	function zoomOut() {
+		if (cy) cy.zoom(cy.zoom() * 0.8);
+	}
+
+	//where we run on component mount
+	onMount(() => {
+		const stored = sessionStorage.getItem('treeData');
+		treeData = stored ? JSON.parse(stored) : [];
+
+		rootLabel = sessionStorage.getItem('treeRoot') || 'ROOT';
+
+		cy = cytoscape({
+			container,
+			elements: buildElements(treeData),
+			layout: {
+				name: 'breadthfirst',
+				directed: true,
+				padding: 10,
+				spacingFactor: 1.75
+			},
+			style: [
+				{
+					selector: 'node',
+					style: {
+						'shape': 'roundrectangle',
+						'background-color': ele => getSeverityColor(ele.data('severity')),
+						'label': 'data(label)',
+						'text-valign': 'center',
+						'text-halign': 'center',
+						'color': '#fff',
+						'font-size': 10,
+						'text-wrap': 'wrap',
+						'text-max-width': 80,
+						'width': 100,
+						'height': 50,
+						'border-width': 2,
+						'border-color': '#444'
+					}
+				},
+				{
+					selector: 'edge',
+					style: {
+						'width': 2,
+						'line-color': '#ccc',
+						'target-arrow-color': '#ccc',
+						'target-arrow-shape': 'triangle'
+					}
+				}
+			],
+			wheelSensitivity: 0.2
+		});
+	});
 </script>
 
+<!-- Graph container -->
+<div class="tree-container" bind:this={container}></div>
+
+<!-- Zoom control buttons -->
+<div class="controls">
+	<button on:click={zoomIn}>+</button>
+	<button on:click={zoomOut}>-</button>
+	<button on:click={resetZoom}>Reset</button>
+</div>
+
 <style>
-  h1 {
-    color: #ffffff;
-    margin-bottom: 15px;
-    font-size: 24px;
-  }
+	/* Graph container fills space except for sidebar */
+	.tree-container {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 10%; /* account for left sidebar */
+		right: 0;
+		z-index: 0;
+	}
 
-  #cy {
-    width: 100%;
-    height: 80vh;
-    background: #f9f9f9;
-    border: 1px solid #444;
-    border-radius: 8px;
-    margin-bottom: 20px;
-  }
+	/*bottom right controls(zoom controls) */
+	.controls {
+		position: absolute;
+		bottom: 1rem;
+		right: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		z-index: 1;
+	}
 
-  .legend {
-    color: #dddddd;
-    font-size: 14px;
-    margin-top: 10px;
-  }
+	.controls button {
+		background-color: #444;
+		color: white;
+		border: none;
+		padding: 0.5rem 0.75rem;
+		font-size: 1.2rem;
+		border-radius: 4px;
+		cursor: pointer;
+	}
 
-  .legend p {
-    margin: 4px 0;
-  }
-
-  .legend span {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    margin-right: 8px;
-    border: 1px solid #666;
-    border-radius: 3px;
-  }
-
-  .error {
-    color: #ff4d4d;
-    margin-top: 20px;
-    font-weight: bold;
-  }
-
-  .control-buttons {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .control-buttons button {
-    background-color: lightgray;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .control-buttons button:hover {
-    background-color: #ddd;
-  }
+	.controls button:hover {
+		background-color: #666;
+	}
 </style>
-
-<h1>Tree Graph View</h1>
-
-{#if isLoading}
-  <p class="legend">Loading Tree Graph...</p>
-{:else if error}
-  <p class="error">{error}</p>
-{:else}
-  <div style="position: relative;">
-    <div id="cy"></div>
-    <div class="control-buttons">
-      <button on:click={zoomIn}>Zoom In</button>
-      <button on:click={zoomOut}>Zoom Out</button>
-      <button on:click={resetView}>Center</button>
-    </div>
-  </div>
-  <div class="legend">
-    <p><span style="background:#3498db"></span> Info</p>
-    <p><span style="background:#f1c40f"></span> Low</p>
-    <p><span style="background:#e67e22"></span> Medium</p>
-    <p><span style="background:#e74c3c"></span> High</p>
-  </div>
-{/if}
