@@ -2,6 +2,7 @@ import json
 from neo4j import GraphDatabase
 from datetime import datetime
 import ssl
+import uuid
 
 URI="neo4j://941e739f.databases.neo4j.io"
 User="neo4j"
@@ -76,12 +77,12 @@ class Neo4jInteractive:
             session.run(query, name=str(Project_Name), locked_status=locked_bool, Stamp_Date=formatDate, description=str(description), MachineIP=str(MachineIP), Status=str(status).capitalize(), files=[]if list_files=="" else list(list_files), last_edit=formatDate)
             return {"status": "success"}
         
-    def relationship_results(self, project_name, id, type):
+    def relationship_results(self, project_name, run_id):
         if not all([project_name, id]):
             return {"status": "failure", "error":"One or more parameters missing"}
-        query= """MATCH (p:Project {name: $name}), (r:Result {id:$id, type:$type}) MERGE (p)-[:HAS_RESULT]->(r)"""
+        query= """MATCH (p:Project {name: $name}), (s:ScanRun {run_id: $run_id}) MERGE (p)-[:HAS_SCAN]->(s)"""
         with self.driver.session() as session:
-            session.run(query, name=str(project_name), id=int(id), type=str(type))
+            session.run(query, name=str(project_name), run_id=str(run_id))
             return {"status": "success"}
 
 
@@ -112,7 +113,7 @@ class Neo4jInteractive:
      # Allows the Database to receive a JSON and put all the information inside a node called Results
     # @params: json_data: json object, result_type: indicator for which type of result is
     # @returns: json with success or failure status 
-    def process_Response(self, json_data, result_type):
+    def process_Response(self, json_data, result_type, project_name, run_id=None):
         if isinstance(json_data, str):
             try:
                 results = json.loads(json_data)
@@ -124,22 +125,77 @@ class Neo4jInteractive:
             results = [json_data]
         else:
             return {"status": "failure", "error": "Unsupported type of JSON"}
+        
+        
+        if not run_id:
+            run_id = str(uuid.uuid4())
+
         with self.driver.session() as session:
-            for result in results:
-                result["type"] = result_type
+            try:
+                session.execute_write(
+                lambda tx: tx.run(
+                    """
+                    MATCH (p:Project {name: $project_name})
+                    MERGE (s:ScanRun {run_id: $run_id})
+                    SET s.type = $type
+                    MERGE (p)-[:HAS_SCAN]->(s)
+                    """,
+                    {"run_id": run_id, "type": result_type, "project_name": project_name}
+                    )
+                )
+                
+                for result in results:
+                    result["type"] = result_type
+                    result["id"]= str(result["id"])+"_"+run_id
+                    if "error" in result and isinstance(result["error"], str):
+                        result["error"] = result["error"].lower() == "true"
 
-                fields = ", ".join([f"{key}: ${key}" for key in result])
-                query = f"CREATE (r:Result {{ {fields} }})"
 
-                try:
-                    session.execute_write(lambda tx: tx.run(query, result))
-                except Exception as e:
-                    return {
-                        "status": "failure",
-                        "error": f"Failed to insert record: {str(e)}"
+                    fields = ", ".join([f"{key}: ${key}" for key in result])
+         
+                    query = f"CREATE (r:Result {{ {fields} }})"
+
+                    try:
+
+                        session.execute_write(lambda tx: tx.run(query, result))
+
+                        session.execute_write(lambda tx: tx.run(
+                            """ MATCH (s:ScanRun {run_id: $run_id})
+                                MATCH (r:Result {id: $result_id})
+                                MERGE (s)-[:HAS_RESULT]->(r)""",
+                                {"run_id": run_id, "result_id": result["id"]}))
+                        
+                        self.relationship_results(project_name, run_id)
+                    except Exception as e:
+                        return {
+                            "status": "failure",
+                            "error": f"Failed to insert record: {str(e)}"
+                        }
+
+            except Exception as e:
+                return {
+                    "status": "failure",
+                    "error": f"Failed to insert record: {str(e)}"
                     }
 
         return {"status": "success"}
+    
+    def get_all_results_by_project(self, project_name):
+        query = """
+        MATCH (p {name: $project_name})
+        WHERE EXISTS {
+        MATCH (p)-[:HAS_SCAN]->(sc:ScanRun)
+        WHERE toLower(sc.type) = 'crawler'
+        }
+        MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        MATCH (s)-[:HAS_RESULT]->(r)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            result = session.run(query, project_name=project_name)
+            return [dict(record["r"]) for record in result]
+
     
 
     def export_project(self, project_name):
@@ -250,8 +306,30 @@ class Neo4jInteractive:
             return {"status": "failure", "error": "No project or folder received"}
         query= """MATCH (u:Project {name: $name}), (f:Folder{path:$folder_path}) 
                 MERGE (u)-[:IS_IN]->(f)"""
-        with self.driver.session() as session:
-            session.run(query, name=str(project_name), folder_path=str(folder_path))
+        try:
+            with self.driver.session() as session:
+                session.run(query, name=str(project_name), folder_path=str(folder_path))
+                return {"status": "success"}
+        except Exception as e:
+            return {"status": "failure", "error": f"Failed to insert record: {str(e)}"}
+        
+    def get_projects_in_folder(self, folder_name):
+        if not folder_name:
+            return {"status": "failure", "error": "No folder name provided"}
+
+        query = """
+        MATCH (p:Project)-[:IS_IN]->(f:Folder {name: $folder_name})
+        RETURN p.name AS project_name
+        """
+
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, folder_name=str(folder_name))
+                projects = [dict(record["project_name"]) for record in result]
+                return projects
+        except Exception as e:
+            return {"status": "failure", "error": str(e)}
+
         
     # Allows to add a relationship of ownership betwwen the analyst and a project
     # @params: Owner_initials: Initials of the Lead analyst, project_name: Name of the project the analyst os going to own
@@ -393,6 +471,19 @@ class Neo4jInteractive:
             result = session.run(query, initials=analyst_initials)
             return [dict(record["p"]) for record in result]
 
+    def get_results_by_scan(self, project_name, run_id):
+        query = """MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+                RETURN r"""
+
+        with self.driver.session() as session:
+            try:
+                results = session.execute_read(
+                    lambda tx: tx.run(query, project_name=project_name, run_id=run_id).data()
+                )
+                return [dict(record["e"]) for record in results]
+            except Exception as e:
+                return {"status": "failure", "error": str(e)}
+
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
@@ -411,4 +502,3 @@ def is_ip_valid(ip):
             return False
     
     return True
-

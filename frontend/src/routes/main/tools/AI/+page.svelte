@@ -28,6 +28,8 @@
     wordlist : ""
   }
 
+  let abortController = null;
+
   for(let i = 0; i < usernameInput.length;i++){
     aiParams[usernameInput[i].id] = usernameInput[i].isChecked;
   }
@@ -38,7 +40,7 @@
   }
   console.log("Populated aiParams with Password checkbox...");
 
-  let aiResult = []
+  let aiResult = [];
 
   let acceptingParams = true;
   let generating = false;
@@ -78,6 +80,11 @@
   function regenerateCredentials(){
     displayingResults = false;
     generating = true;
+
+    aiResult = [];
+
+    console.log("Removed previous wordlist results", aiResult)
+
     handleSubmit();
   }
 
@@ -162,6 +169,13 @@
     }
   }
 
+  function handleStop() {
+    console.log("Stop Generation Not implemented")
+    //if (abortController) {
+    //  abortController.abort();
+    //}
+}
+
   async function fetchUserList() {
     try {
       const response = await fetch("http://localhost:8000/display_userList", {
@@ -179,7 +193,7 @@
 
   // This is for inputs to be sent to the backend for computation.
   async function handleSubmit() {
-    console.log("Form Submitted");
+    console.log("Form Submitted", aiResult);
 
     const formData = new FormData();
 
@@ -309,9 +323,9 @@
       {#if generating}
           <form style="width: 80%; height: 200px; text-align: center; border: 2px solid #5f5f5f;">
             <h2>Generating Credentials...</h2>
-            <button onclick={(e) => {preventDefault(e); stopAI()}} title="Completely Stops AI generation">Stop Generation</button>
+            <button onclick={(e) => {preventDefault(e); handleStop()}} title="Completely Stops AI generation">Stop Generation</button>
           </form>
-          <div class="lds-dual-ring" style="padding-left: 0%;"></div>
+          <div class="lds-dual-ring" style="padding-left: 40%;"></div>
       {/if}
 
       {#if displayingResults}
@@ -334,6 +348,7 @@
           </tbody>
         </table>
         <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
+        <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
         <button onclick={(e) => {handleSave()}}>Save Wordlist</button>
       </div>
       {/if}

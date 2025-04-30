@@ -24,16 +24,32 @@
           console.error('Fetch error:', err);
       }
   }
+
+  async function handleInitCreation(type) {
+    const formData = new FormData();
+    formData.append('analyst_initials', initials);
+    
+    try {
+      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}`,{
+          method: 'POST',
+          body: formData
+      });
+
+      if (response.ok) {
+          handleStart(); //Handle login after creating analyst
+      } else {
+          const data = await response.json();
+          throw new Error( data.error || 'Failed to create analyst initials');
+      }
+      
+    } catch (err) {
+        errorMessage= err.message + ': ERROR';
+        console.error('Fetch error:', err);
+    }
+  }
 </script>
 
 <style>
-  /* Ensure html and body fill the screen */
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-  }
 
   /* Full-screen landing page with dark gray background */
   .landing-section {
@@ -84,6 +100,11 @@
     max-width: 700px;
   }
 
+  .register-sub{
+    font-size: 1rem;
+    margin-top: 2rem;
+  }
+
   .error {
     color: #b91c1c;
     font-weight: bold;
@@ -99,8 +120,8 @@
   /*grey box*/
   .welcome-box {
     width: 300px;
-    height: 300px;
-    display: flex;
+    height: 400px;
+    /*display: flex;*/
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -125,7 +146,7 @@
 
   .welcome-box button {
     font-size: 1rem;
-    padding: 0.5rem;
+    padding: 1rem;
     width: 60%;
     background-color: #3b82f6;
     color: white;
@@ -137,6 +158,16 @@
 
   .welcome-box button:hover {
     background-color: #2563eb;
+  }
+
+  .register-button{
+    background-color: #555555 !important;
+    width: 45% !important;
+    display:inline-block !important;
+  }
+
+  .register-button:hover{
+    background-color: #4A4A4A !important;
   }
 </style>
 
@@ -163,6 +194,11 @@
         bind:value={initials}
       />
       <button on:click={handleStart}>START</button>
+
+      <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
+      <p class="register-sub">Don't have your initials registered?</p>
+      <button class="register-button" on:click={handleInitCreation(0)}>Register Analyst Initials</button>
+      <button class="register-button" on:click={handleInitCreation(1)}>Register Lead Initials</button>
     </div>
   </main>
 </div>

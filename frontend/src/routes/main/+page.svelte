@@ -109,7 +109,7 @@
           project.name === projectName ? { ...project, locked: false, Status: 'Active' } : project
         );
         recent_projects=recent_projects.map(project=>
-          project.name === projectName ? {...project, locked: falsex, Status: 'Active'}: project
+          project.name === projectName ? {...project, locked: false, Status: 'Active'}: project
         );
         // Update sharedProjects if the project exists there
         sharedProjects = sharedProjects.map(project =>
@@ -172,6 +172,7 @@
   
     // Placeholder for Run Scan
     async function runScan(projectName) {
+      sessionStorage.setItem('name', projectName);
       goto('main/tools/');
       console.log(`Running scan for project: ${projectName}`);
       // Implement API call if needed

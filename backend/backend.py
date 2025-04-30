@@ -1,8 +1,9 @@
-from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
+from fastapi import FastAPI, File, UploadFile, Form,  HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
+from DB_projects.neo4jDB import Neo4jInteractive
 from crawler import Crawler
 from typing import List, Optional
 import logging
@@ -17,16 +18,28 @@ import neo4j.time
 import mdp3
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
-import json
 import csv
 import sys
+from proxy_logic import handle_proxy_request, request_history, response_history
+from sqlInjectorManager import SQLInjectionManager
+import mysql.connector
+
+from sqlInjectorManager import SQLInjectionManager
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
+CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("asyncio")
 
 # creates endpoints
 app = FastAPI(title="Routes")
+
+class ProxyRequest(BaseModel):
+    url: str
+    method: str = "GET"
+
+class RawRequest(BaseModel):
+    rawRequest: str
 
 # params for crawler (optionals for optional params,
 # both int | str in case they type into box and then delete input, prevents error and request goes through)
@@ -166,6 +179,82 @@ async def resumeFuzzer():
         return {"message": "Fuzzer resumed"}
     return {"message": "No active fuzzer to resume"}
 
+# ==== TREE GRAPH ENDPOINTS START ====
+@app.get("/api/tree-data")
+async def get_tree_data():
+    """Fetch list of URLs with severity for Tree List page."""
+    try:
+        with open(CRAWL_RESULTS_PATH, 'r') as file:
+            data = json.load(file)
+        if not data:
+            return []
+
+        # Example: Return list of dicts with id, url, severity
+        return [{"id": item["id"], "url": item["url"], "severity": item.get("severity", "Info")} for item in data]
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Crawl results not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Endpoint to get Tree Graph structure for Vis.js
+@app.get("/api/tree-graph")
+async def get_tree_graph():
+    try:
+        with open(CRAWL_RESULTS_PATH, 'r') as file:
+            data = json.load(file)
+        if not data:
+            return {"nodes": [], "edges": []}
+
+        nodes = []
+        edges = []
+
+        for item in data:
+            nodes.append({
+                "id": item["id"],
+                "label": item["url"],
+                "color": severity_color(item.get("severity", "Info"))
+            })
+
+            # Simple logic: connect based on slashes in URL
+            url_depth = item["url"].count('/')
+            if url_depth > 2:  # Assuming base URL has http(s)://
+                parent_id = find_parent(data, item)
+                if parent_id:
+                    edges.append({"from": parent_id, "to": item["id"]})
+
+        return {"nodes": nodes, "edges": edges}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Helper to assign colors based on severity
+def severity_color(severity):
+    return {
+        "Info": "#3498db",    # Blue
+        "Low": "#f1c40f",     # Yellow
+        "Medium": "#e67e22",  # Orange
+        "High": "#e74c3c"     # Red
+    }.get(severity, "#95a5a6")  # Default Grey
+
+
+# Helper to find parent node (basic example)
+def find_parent(data, current_item):
+    current_url = current_item["url"]
+    possible_parents = [item for item in data if item["id"] != current_item["id"]]
+    parent = None
+    max_match = 0
+
+    for item in possible_parents:
+        if current_url.startswith(item["url"]) and len(item["url"]) > max_match:
+            parent = item["id"]
+            max_match = len(item["url"])
+
+    return parent
+# ==== TREE GRAPH ENDPOINTS END ====
+
 
 # Add BruteForcer request model --- BRUTEFORCER
 class BruteForcerRequest(BaseModel):
@@ -290,8 +379,14 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
        
     urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
     csv_path = "./csv_uploads/web_text.csv"
+
+    print("Starting web scraper")
     scrapper = WebScraper(urls)
+
+    print("Starting generate csv")
     scrapper.generate_csv(csv_path)
+
+    print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
 
     data = json.loads(data)
@@ -376,7 +471,54 @@ async def delete_userpassword(data: str = Form(...)):
             return True
     print(f"File '{filename}' not found in 'user_passwords_uploads'.")
     return False
+#HTTP_TESTER ENDPOINT
+@app.post("/api/send-http-request")
+async def send_raw_http(req: RawRequest):
+    try:
+        lines = req.rawRequest.strip().split('\n')
+        request_line = lines[0].strip()
+        method, path, _ = request_line.split()
+        host_line = next((line for line in lines if line.lower().startswith("host:")), None)
+        host = host_line.split(":", 1)[1].strip() if host_line else ""
 
+        url = f"http://{host}{path}"
+
+        headers = {}
+        body = None
+        header_section = True
+        for line in lines[1:]:
+            line = line.strip()
+            if header_section:
+                if line == "":
+                    header_section = False
+                    continue
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k.strip()] = v.strip()
+            else:
+                body = body + "\n" + line if body else line
+
+        result = send_http_request(url, method, headers, body)
+        return {
+            "status": result["status_code"],
+            "headers": headers,
+            "body": result["body"]
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/proxy-request")
+async def proxy_request(req: ProxyRequest):
+    return handle_proxy_request(req.url, req.method)
+
+@app.get("/proxy-history")
+def get_history():
+    return {
+        "requestHistory": request_history,
+        "responseHistory": response_history
+    }
 
 
 ##
@@ -409,7 +551,7 @@ async def dashboard(initials):
             project["Stamp_Date"] = project["Stamp_Date"].iso_format()
     return {"my_projects": my_projects, "shared_projects": shared_projects}
 
-@app.get("/folders/")
+@app.get("/create_folder/")
 async def get_folders():
     result=pm.get_folders()
     for folders in result:
@@ -449,6 +591,11 @@ async def create_project(project_name: str = Form(...),
     result=pm.create_project(project_name, locked, description, machine_IP, status, lead_analyst_initials, files)
     return {"status": "success"}
 
+@app.get("/getResult/{projectName}")
+async def get_scans(projectName: str):
+    return pm.get_all_scans(projectName)
+
+
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
     result= pm.check_login(initials)
@@ -472,6 +619,122 @@ async def export_project(projectName: str):
             return {"status": "failure", "error": result.get("error", "Failed to export project")}
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
+    
+@app.post("/submit_results/{result_type}/{project_name}")
+async def submit_results(result_type, project_name , request: Request):
+    if not [result_type,project_name]:
+        return {"status": "failure", "error": "Missing result_type or project_name"}
+    try:
+        test_data = await request.json()
+        pm.submit_results(test_data, result_type, project_name)
+    except Exception as e:
+        return {"status": "failure", "error": f"Submission failed: {str(e)}"}
+
+@app.post("/submit_txt_results/{result_type}/{project_name}")
+async def submit_txt_results(result_type, project_name, file: UploadFile=File(...)):
+    try:
+        test_data = await file.read()
+        test_data = test_data.decode("utf-8")
+        lines= test_data.strip().splitlines()
+        results = []
+        header= lines[0].split(",")
+        for line in lines[1:]:
+            values = line.split(",",1)
+            result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
+            results.append(result)
+        pm.submit_results(results, result_type, project_name)    
+    except Exception as e:
+        return {"status": "failure", "error": f"Export failed: {str(e)}"}
+
+@app.post("/project_folder/{folder_name}")
+async def get_projects_in_folder(folder_name: str):
+    result = pm.get_projects_in_folder(folder_name)
+    for project in result:
+        if "creation_date" in project and isinstance(project["creation_date"], neo4j.time.DateTime):
+            project["creation_date"] = project["creation_date"].iso_format()
+        if "last_edit_date" in project and isinstance(project["last_edit_date"], neo4j.time.DateTime):
+            project["last_edit_date"] = project["last_edit_date"].iso_format()
+        if "stamp_date" in project and isinstance(project["stamp_date"], neo4j.time.DateTime):
+                    project["stamp_date"] = project["stamp_date"].iso_format()
+    return {"projects": result}
+    
+
+    
+class SQLRequest(BaseModel):
+    target_url: str
+    port: int
+    timeout: int = 5
+    headers: dict = {}
+    enum_level: int = 0
+
+@app.post("/api/sql_injection")
+async def sql_inject(req: SQLRequest):
+    injector = SQLInjectionManager()
+    results = injector.perform_sql_injection(
+        req.target_url,
+        req.port,
+        timeout=req.timeout,
+        headers=req.headers,
+        enum_level=req.enum_level
+    )
+    return results
+
+import mysql.connector  # Make sure you pip install mysql-connector-python
+from fastapi import HTTPException
+
+class DBEnumerator:
+    def enumerate(self, host, port, username, password):
+        try:
+            conn = mysql.connector.connect(
+                host=host,
+                port=port,
+                user=username,
+                password=password
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT VERSION()")
+            version = cursor.fetchone()[0]
+            cursor.execute("SHOW DATABASES")
+
+            databases = cursor.fetchall()
+            all_tables = []
+            pii_tables = []
+
+            for db in databases:
+                db_name = db[0]
+                cursor.execute(f"USE {db_name}")
+                cursor.execute("SHOW TABLES")
+                tables = cursor.fetchall()
+                for table in tables:
+                    table_name = table[0]
+                    all_tables.append(f"{db_name}.{table_name}")
+                    # PII detection: simple keyword match
+                    if any(keyword in table_name.lower() for keyword in ["user", "password", "email", "credit", "social", "ssn"]):
+                        pii_tables.append(f"{db_name}.{table_name}")
+
+            return {
+                "version": version,
+                "total_tables": len(all_tables),
+                "tables": all_tables,
+                "pii_tables": pii_tables
+            }
+        except mysql.connector.Error as err:
+            raise HTTPException(status_code=500, detail=f"MySQL Error: {err}")
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+                ''
+
+@app.post("/api/db_enum")
+async def db_enum_endpoint(request: Request):
+    body = await request.json()
+    host = body.get('host')
+    port = body.get('port')
+    username = body.get('username')
+    password = body.get('password')
+
+    return db_enum.enumerate(host, port, username, password)
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
@@ -481,3 +744,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+##
+## TEAM 6 PART
+##
+
+n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+
+#Create new Initials directly into the db.
+#THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
+@app.post("/create_initials/{initials}/{type}")
+async def create_initials(initials:str, type:int):
+    role="Analyst"
+    
+    if type == 1:
+        role = "Lead"
+    
+    result=n4ji.create_Analyst(" ", role, initials) 
+    
+    return result
