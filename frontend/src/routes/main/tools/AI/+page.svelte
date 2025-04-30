@@ -348,6 +348,7 @@
 
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
+        <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum"]} Passwords: {aiParams["passNum"]}</h3>
         <div class="results-table">
         <table>
           <thead>
