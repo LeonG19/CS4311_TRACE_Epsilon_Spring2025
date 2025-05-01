@@ -453,32 +453,28 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     print(data)
-
-    
-    scans = await get_scans(data["projectName"])
+ 
+    scans = await get_all_scans(data["projectName"])
     if (scans == []):
-        print("no scans")
         return {"scans": False}
     urls = [
     scan["url"].strip()
     for scan in scans
     if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
     ]
-    print(urls)
-
+ 
     csv_path = "./csv_uploads/web_text.csv"
-
+ 
     print("Starting web scraper")
-    scrapper = WebScraper(urls,  batch_size=20, concurrency=10)
-
+    scrapper = WebScraper(urls)
+ 
     print("Starting generate csv")
-    await scrapper.generate_csv(csv_path)
-
+    scrapper.generate_csv(csv_path)
+ 
     print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
-
-    
-    global generator
+ 
+   
     generator = CredentialGeneratorMDP(
         csv_path,
         file_word,
@@ -486,20 +482,30 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
         data["userNum"],
         data["userSymb"],
         int(data["userLen"]),
-
+ 
         data["passChar"],
         data["passNum"],
-        data["passSymb"], 
-        int(data["passLen"]) 
+        data["passSymb"],
+        int(data["passLen"])
     )
     credentials = generator.generate_credentials(int(data["userNum2"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
-
+    print(credentials)
     return {"credentials": credentials}
     
-
+@app.get("/export_AI/{project_name}/{scan_id}")
+async def export_AI(scan_id: str, project_name:str):
+    data = pm.get_ai_results(project_name)
+    for run in data:
+        if run.get("run_id") == scan_id:
+            return [
+                (entry.get("Username", ""), entry.get("Password", ""))
+                for entry in run.get("results", [])
+            ]
+    # if no matching run_id found, return empty list
+    return []
 
 
 def creds_to_uploadfile(creds) -> UploadFile:
@@ -773,19 +779,18 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
         return results
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
-    
 
 project_run_indices: dict[str, dict[str, int]] = {}
-
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
     data = pm.get_ai_results(project_name)     # list of dicts, each with "run_id"
+    print(data)
     # get-or-create the per-project map
     mapping = project_run_indices.setdefault(project_name, {})
-
+ 
     # figure out which run_ids we actually have this time
     current_ids = [ str(item["run_id"]) for item in data ]
-
+ 
     # assign new indices to any run_id we haven't seen before
     #   next_index = 1 + the max of existing indices (or 0 if none)
     next_index = max(mapping.values(), default=-1) + 1
@@ -793,7 +798,7 @@ async def get_ai_results(project_name: str):
         if rid not in mapping:
             mapping[rid] = next_index
             next_index += 1
-
+ 
     # now build your output dict, only including run_ids that still exist
     uDict: dict[str, str] = {}
     for rid, idx in sorted(mapping.items(), key=lambda kv: kv[1]):

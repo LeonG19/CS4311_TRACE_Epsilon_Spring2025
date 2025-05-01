@@ -5,3 +5,4 @@ fastapi
 python-multipart
 neo4j
 mysql-connector-python
+uvicorn

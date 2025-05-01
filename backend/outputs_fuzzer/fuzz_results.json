@@ -1,0 +1,992 @@
+[
+    {
+        "id": 1,
+        "url": "https://www.apple.com?fuzz=admin",
+        "title": "Payload: admin",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 2,
+        "url": "https://www.apple.com?fuzz=login",
+        "title": "Payload: login",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 3,
+        "url": "https://www.apple.com?fuzz=home",
+        "title": "Payload: home",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 4,
+        "url": "https://www.apple.com?fuzz=help",
+        "title": "Payload: help",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 5,
+        "url": "https://www.apple.com?fuzz=faq",
+        "title": "Payload: faq",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 6,
+        "url": "https://www.apple.com?fuzz=contact",
+        "title": "Payload: contact",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 7,
+        "url": "https://www.apple.com?fuzz=about",
+        "title": "Payload: about",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 8,
+        "url": "https://www.apple.com?fuzz=images",
+        "title": "Payload: images",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 9,
+        "url": "https://www.apple.com?fuzz=img",
+        "title": "Payload: img",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 10,
+        "url": "https://www.apple.com?fuzz=assets",
+        "title": "Payload: assets",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 11,
+        "url": "https://www.apple.com?fuzz=css",
+        "title": "Payload: css",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 12,
+        "url": "https://www.apple.com?fuzz=js",
+        "title": "Payload: js",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 13,
+        "url": "https://www.apple.com?fuzz=static",
+        "title": "Payload: static",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 14,
+        "url": "https://www.apple.com?fuzz=media",
+        "title": "Payload: media",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 15,
+        "url": "https://www.apple.com?fuzz=uploads",
+        "title": "Payload: uploads",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 16,
+        "url": "https://www.apple.com?fuzz=download",
+        "title": "Payload: download",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 17,
+        "url": "https://www.apple.com?fuzz=docs",
+        "title": "Payload: docs",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 18,
+        "url": "https://www.apple.com?fuzz=documentation",
+        "title": "Payload: documentation",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 19,
+        "url": "https://www.apple.com?fuzz=api",
+        "title": "Payload: api",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 20,
+        "url": "https://www.apple.com?fuzz=register",
+        "title": "Payload: register",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 21,
+        "url": "https://www.apple.com?fuzz=signup",
+        "title": "Payload: signup",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 22,
+        "url": "https://www.apple.com?fuzz=profile",
+        "title": "Payload: profile",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 23,
+        "url": "https://www.apple.com?fuzz=user",
+        "title": "Payload: user",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 24,
+        "url": "https://www.apple.com?fuzz=dashboard",
+        "title": "Payload: dashboard",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 25,
+        "url": "https://www.apple.com?fuzz=portal",
+        "title": "Payload: portal",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 26,
+        "url": "https://www.apple.com?fuzz=members",
+        "title": "Payload: members",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 27,
+        "url": "https://www.apple.com?fuzz=account",
+        "title": "Payload: account",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 28,
+        "url": "https://www.apple.com?fuzz=secure",
+        "title": "Payload: secure",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 29,
+        "url": "https://www.apple.com?fuzz=private",
+        "title": "Payload: private",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 30,
+        "url": "https://www.apple.com?fuzz=public",
+        "title": "Payload: public",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 31,
+        "url": "https://www.apple.com?fuzz=backup",
+        "title": "Payload: backup",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 32,
+        "url": "https://www.apple.com?fuzz=config",
+        "title": "Payload: config",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 33,
+        "url": "https://www.apple.com?fuzz=setup",
+        "title": "Payload: setup",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 34,
+        "url": "https://www.apple.com?fuzz=install",
+        "title": "Payload: install",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 35,
+        "url": "https://www.apple.com?fuzz=update",
+        "title": "Payload: update",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 36,
+        "url": "https://www.apple.com?fuzz=wp-admin",
+        "title": "Payload: wp-admin",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 37,
+        "url": "https://www.apple.com?fuzz=wp-content",
+        "title": "Payload: wp-content",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 38,
+        "url": "https://www.apple.com?fuzz=wordpress",
+        "title": "Payload: wordpress",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 39,
+        "url": "https://www.apple.com?fuzz=joomla",
+        "title": "Payload: joomla",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 40,
+        "url": "https://www.apple.com?fuzz=drupal",
+        "title": "Payload: drupal",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 41,
+        "url": "https://www.apple.com?fuzz=magento",
+        "title": "Payload: magento",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 42,
+        "url": "https://www.apple.com?fuzz=cpanel",
+        "title": "Payload: cpanel",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 43,
+        "url": "https://www.apple.com?fuzz=phpmyadmin",
+        "title": "Payload: phpmyadmin",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 44,
+        "url": "https://www.apple.com?fuzz=webmail",
+        "title": "Payload: webmail",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 45,
+        "url": "https://www.apple.com?fuzz=mail",
+        "title": "Payload: mail",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 46,
+        "url": "https://www.apple.com?fuzz=smtp",
+        "title": "Payload: smtp",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 47,
+        "url": "https://www.apple.com?fuzz=ftp",
+        "title": "Payload: ftp",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 48,
+        "url": "https://www.apple.com?fuzz=database",
+        "title": "Payload: database",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 49,
+        "url": "https://www.apple.com?fuzz=db",
+        "title": "Payload: db",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 50,
+        "url": "https://www.apple.com?fuzz=forum",
+        "title": "Payload: forum",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 51,
+        "url": "https://www.apple.com?fuzz=blog",
+        "title": "Payload: blog",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 52,
+        "url": "https://www.apple.com?fuzz=news",
+        "title": "Payload: news",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 53,
+        "url": "https://www.apple.com?fuzz=shop",
+        "title": "Payload: shop",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 54,
+        "url": "https://www.apple.com?fuzz=store",
+        "title": "Payload: store",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 55,
+        "url": "https://www.apple.com?fuzz=cart",
+        "title": "Payload: cart",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 56,
+        "url": "https://www.apple.com?fuzz=checkout",
+        "title": "Payload: checkout",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 57,
+        "url": "https://www.apple.com?fuzz=payment",
+        "title": "Payload: payment",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 58,
+        "url": "https://www.apple.com?fuzz=support",
+        "title": "Payload: support",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 59,
+        "url": "https://www.apple.com?fuzz=ticket",
+        "title": "Payload: ticket",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 60,
+        "url": "https://www.apple.com?fuzz=status",
+        "title": "Payload: status",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 61,
+        "url": "https://www.apple.com?fuzz=search",
+        "title": "Payload: search",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 62,
+        "url": "https://www.apple.com?fuzz=index",
+        "title": "Payload: index",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 63,
+        "url": "https://www.apple.com?fuzz=default",
+        "title": "Payload: default",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 64,
+        "url": "https://www.apple.com?fuzz=main",
+        "title": "Payload: main",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 65,
+        "url": "https://www.apple.com?fuzz=test",
+        "title": "Payload: test",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 66,
+        "url": "https://www.apple.com?fuzz=dev",
+        "title": "Payload: dev",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 67,
+        "url": "https://www.apple.com?fuzz=staging",
+        "title": "Payload: staging",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 68,
+        "url": "https://www.apple.com?fuzz=prod",
+        "title": "Payload: prod",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 69,
+        "url": "https://www.apple.com?fuzz=production",
+        "title": "Payload: production",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 70,
+        "url": "https://www.apple.com?fuzz=old",
+        "title": "Payload: old",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 71,
+        "url": "https://www.apple.com?fuzz=new",
+        "title": "Payload: new",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 72,
+        "url": "https://www.apple.com?fuzz=temp",
+        "title": "Payload: temp",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 73,
+        "url": "https://www.apple.com?fuzz=tmp",
+        "title": "Payload: tmp",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 74,
+        "url": "https://www.apple.com?fuzz=archive",
+        "title": "Payload: archive",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 75,
+        "url": "https://www.apple.com?fuzz=log",
+        "title": "Payload: log",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 76,
+        "url": "https://www.apple.com?fuzz=logs",
+        "title": "Payload: logs",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 77,
+        "url": "https://www.apple.com?fuzz=cgi-bin",
+        "title": "Payload: cgi-bin",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 78,
+        "url": "https://www.apple.com?fuzz=bin",
+        "title": "Payload: bin",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 79,
+        "url": "https://www.apple.com?fuzz=include",
+        "title": "Payload: include",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 80,
+        "url": "https://www.apple.com?fuzz=includes",
+        "title": "Payload: includes",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 81,
+        "url": "https://www.apple.com?fuzz=libs",
+        "title": "Payload: libs",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 82,
+        "url": "https://www.apple.com?fuzz=libraries",
+        "title": "Payload: libraries",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 83,
+        "url": "https://www.apple.com?fuzz=vendor",
+        "title": "Payload: vendor",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 84,
+        "url": "https://www.apple.com?fuzz=node_modules",
+        "title": "Payload: node_modules",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 85,
+        "url": "https://www.apple.com?fuzz=classes",
+        "title": "Payload: classes",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 86,
+        "url": "https://www.apple.com?fuzz=scripts",
+        "title": "Payload: scripts",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 87,
+        "url": "https://www.apple.com?fuzz=ajax",
+        "title": "Payload: ajax",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 88,
+        "url": "https://www.apple.com?fuzz=xml",
+        "title": "Payload: xml",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 89,
+        "url": "https://www.apple.com?fuzz=json",
+        "title": "Payload: json",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 90,
+        "url": "https://www.apple.com?fuzz=rest",
+        "title": "Payload: rest",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 91,
+        "url": "https://www.apple.com?fuzz=soap",
+        "title": "Payload: soap",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 92,
+        "url": "https://www.apple.com?fuzz=auth",
+        "title": "Payload: auth",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 93,
+        "url": "https://www.apple.com?fuzz=logout",
+        "title": "Payload: logout",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 94,
+        "url": "https://www.apple.com?fuzz=password",
+        "title": "Payload: password",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 95,
+        "url": "https://www.apple.com?fuzz=reset",
+        "title": "Payload: reset",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 96,
+        "url": "https://www.apple.com?fuzz=recover",
+        "title": "Payload: recover",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 97,
+        "url": "https://www.apple.com?fuzz=admin-panel",
+        "title": "Payload: admin-panel",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 98,
+        "url": "https://www.apple.com?fuzz=administrator",
+        "title": "Payload: administrator",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 99,
+        "url": "https://www.apple.com?fuzz=moderator",
+        "title": "Payload: moderator",
+        "word_count": 12787,
+        "char_count": 206248,
+        "link_count": 0,
+        "error": false,
+        "severity": "Low"
+    }
+]

@@ -3,15 +3,25 @@ from neo4j import GraphDatabase
 from datetime import datetime
 import ssl
 import uuid
+import re
 
-URI = "neo4j://941e739f.databases.neo4j.io"
-User = "neo4j"
-Password = "Team_Blue"
+URI="neo4j://941e739f.databases.neo4j.io"
+User="neo4j"
+Password="Team_Blue"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
         self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+
+    def split_initials(initials: str):
+        match = re.match(r'^([A-Za-z]+)(\d*)$', initials)
+        if match:
+            letters = match.group(1)  # alphabetic part, e.g., "MR"
+            number  = match.group(2)  # numeric part (may be empty), e.g., "1"
+            return letters, number
+        else:
+            return initials, ''
             
     # Allows to create a Lead Analyst
     # @params Name: Name of the Analyst, ID: Id of the Analyst
@@ -31,25 +41,23 @@ class Neo4jInteractive:
             existing = session.run(check_query, base=base_initials)
             existing_initials = [record["existing"] for record in existing]
 
-            # Generar iniciales únicas
-            new_initials = base_initials
             count = 1
             while new_initials in existing_initials:
-                new_initials = f"{base_initials}{count}"
-                count += 1
+                initials, number = self.split_initials(base_initials)
+                if number:
+                    new_initials = initials + str(int(number) + 1)
+                else:
+                    new_initials = initials + str(1)
 
-            # Crear el analista
             query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
             session.run(query_create, name=str(Name), initials=new_initials)
 
-            # Crear rol
             query_find_role = """
             MERGE (r:Role {role: $role})
             RETURN r
             """
             session.run(query_find_role, role=str(role).capitalize())
 
-            # Relación y permisos
             query_create_relation = """
             MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role})
             MERGE (u)-[:HAS_ROLE]->(r)
@@ -61,7 +69,25 @@ class Neo4jInteractive:
 
             return {"status": "success", "initials": new_initials}
 
-    
+    def getScans(self, project_name, type):
+        query = """
+        MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) = toLower($type)
+        RETURN s
+        """
+        with self.driver.session() as session:
+            result = session.run(query, project_name=project_name, type=type)
+            return [dict(record["s"]) for record in result]
+        
+    def getResults_perScan(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            return [dict(record["r"]) for record in result]
+        
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
     # @returns: JSON format with success or error messages
@@ -156,13 +182,6 @@ class Neo4jInteractive:
             query= """MATCH (p:Project {name: $project_name}) SET p.is_deleted= false, p.deleted_date=null """
             session.run(query, project_name=project_name)
             return {"status": "success"}
-        
-    def sanitize_value(value):
-        if isinstance(value, bool):
-            return str(value).lower()  # Converts True to "true" (unquoted in Cypher)
-        elif isinstance(value, str):
-            return value.replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
-        return value
 
      # Allows the Database to receive a JSON and put all the information inside a node called Results
     # @params: json_data: json object, result_type: indicator for which type of result is
@@ -191,7 +210,7 @@ class Neo4jInteractive:
                     """
                     MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
-                    SET tolower(s.type) = LOWER($type)
+                    SET s.type = $type
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -199,7 +218,7 @@ class Neo4jInteractive:
                 )
                 
                 for result in results:
-                    result["type"] = result_type.lower()
+                    result["type"] = result_type
                     if "id" in result and isinstance(result["id"], int):
                         result["id"] = str(result["id"]) + "_" + run_id
                     else:
@@ -208,10 +227,10 @@ class Neo4jInteractive:
                         result["error"] = result["error"].lower() == "true"
 
 
-                    sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
-                    fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
-                    query = f"CREATE (r:Result {{ {fields} }})"
+                    fields = ", ".join([f"{key}: ${key}" for key in result])
+                    print(fields)
          
+                    query = f"CREATE (r:Result {{ {fields} }})"
 
                     try:
 
@@ -238,7 +257,6 @@ class Neo4jInteractive:
 
         return {"status": "success"}
     
-
     def get_all_results_by_project(self, project_name):
         query = """
         MATCH (p {name: $project_name})
@@ -583,10 +601,7 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
-            
-    def close(self):
-        if self.driver:
-            self.driver.close()
+
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
