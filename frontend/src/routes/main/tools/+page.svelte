@@ -24,7 +24,7 @@
     }
 
     function gotoDBEnum() {
-      window.location.href = "/main/tools/DBEnum";
+      window.location.href = "/main/tools/DBEnumerator";
     }
 
 

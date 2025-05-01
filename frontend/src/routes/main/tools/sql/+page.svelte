@@ -92,10 +92,7 @@
         <input type="number" bind:value={timeout} />
       </label>
   
-      <label>
-        Enum Level (0 or 1)
-        <input type="number" bind:value={enum_level} />
-      </label>
+      
   
       <label>
         Optional Headers (JSON)
