@@ -3,41 +3,43 @@
   import { preventDefault } from "svelte/legacy";
 
   import { onDestroy } from 'svelte';
-
-let time = 0; // time in milliseconds
-let displayTime = '0.00';
-let finalTime = '0.00';
-let interval;
-
-function startTimer() {
-  time = 0;
-  clearInterval(interval);
-  interval = setInterval(() => {
-    time += 10;
-    displayTime = (time / 1000).toFixed(2);
-  }, 10);
-}
-
-function stopTimer() {
-  clearInterval(interval);
-}
-
-$: if (generating) {
-  startTimer();
-} else {
-  stopTimer();
-}
-
-$: if (displayingResults) {
-  finalTime = displayTime;
-} else {
-}
-
-onDestroy(() => {
-  clearInterval(interval);
-});
-
   import {onMount} from "svelte";
+
+  let time = 0; // time in milliseconds
+  let displayTime = '0.00';
+  let finalTime = '0.00';
+  let interval;
+
+  function startTimer() {
+    time = 0;
+    clearInterval(interval);
+    interval = setInterval(() => {
+      time += 10;
+      displayTime = (time / 1000).toFixed(2);
+    }, 10);
+  }
+
+  function stopTimer() {
+    clearInterval(interval);
+  }
+
+  $: if (generating) {
+    startTimer();
+  } else {
+    stopTimer();
+  }
+
+  $: if (displayingResults) {
+    finalTime = displayTime;
+  } else {
+  }
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+
+  let wordlistName = '';
+
   let err = ""
   let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
@@ -133,7 +135,14 @@ onDestroy(() => {
 
 
 
-  function saveWordlist(){
+  function exportWordlist(){
+
+    if (wordlistName == ''){
+      wordlistName = 'Generated-Credentials';
+    }
+
+    console.log("Exporting: ",wordlistName);
+
     let textContent = "Username,Password\n";
     textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
 
@@ -144,13 +153,56 @@ onDestroy(() => {
     // Create a temporary download link
     const a = document.createElement("a");
     a.href = url;
-    a.download = "GeneratedWordlist.txt"; // Default file name
+    a.download = wordlistName + ".txt"; // Default file name
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
     // Cleanup
     URL.revokeObjectURL(url);
+  }
+
+  async function exportFromDB(file){
+    console.log(projectName, file);
+    try {
+      const response = await fetch(("http://localhost:8000/export_AI/" + projectName + "/" + file), {
+        method: "GET"
+      });
+
+      if(response.ok){
+        const data = await response.json();
+        console.log("Received AI Results: ", data)
+
+        if (wordlistName == ''){
+          wordlistName = 'Generated-Credentials';
+        }
+
+        // CHANGE wordlistName to appropriate
+        console.log("Exporting: ",wordlistName);
+
+        // CHANGE textContent to DATA
+        let textContent = "Username,Password\n";
+        textContent += data.map(([username, password]) => `${username},${password}`).join("\n");
+
+        // Create a Blob and Object URL
+        const blob = new Blob([textContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = wordlistName + ".txt"; // Default file name
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Cleanup
+        URL.revokeObjectURL(url);
+      }
+
+    } catch (error) {
+      console.error("Error fetching wordlist:", error);
+    }
   }
 
   function dynamicAiParamUpdate(id, value) {
@@ -239,6 +291,8 @@ onDestroy(() => {
 
     const formData = new FormData();
 
+    aiResult = []
+
     if(wordlist) {
       formData.append("file", wordlist);
     }
@@ -262,7 +316,22 @@ onDestroy(() => {
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          const updates = chunk.split('\n').filter(Boolean).map(JSON.parse);
+          const updates = chunk
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              const parsed = JSON.parse(line);
+              
+              // Check for scans === false
+              if (parsed.scans === false) {
+                console.error("Error, missing data from scans");
+                alert("Missing data from scans");
+
+                generatingToParams();
+              }
+
+              return parsed;
+            });
           aiResult = [...aiResult, ...updates];
 
           console.log("Processed Credentials...", aiResult[0].credentials);
@@ -284,7 +353,11 @@ onDestroy(() => {
 
     console.log("Saving File... ");
 
-    const file = new File([textContent], "user_credentials.txt", {type: "text/csv"});
+    if (wordlistName == ''){
+      wordlistName = 'Generated-Credentials';
+    }
+
+    const file = new File([textContent], wordlistName + ".txt", {type: "text/csv"});
 
     const formData = new FormData();
     formData.append("file",file);
@@ -322,7 +395,7 @@ onDestroy(() => {
              
                 <div class="input-container">
                   <div class="column">
-                  <label>Username</label>
+                  <label><u>Username</u></label>
                   {#each usernameInput as param} 
                       <label>{param.label}</label> 
                       <label class="toggle-switch">                
@@ -336,15 +409,10 @@ onDestroy(() => {
                     <input type={usernameLenInput.type} bind:value={usernameLenInput[usernameLenInput.id]} placeholder={usernameLenInput.example} requirement={usernameLenInput.required} oninput={(e) => dynamicAiParamUpdate(usernameLenInput.id, e.target.value)}/>
                   </label>
 
-                  <label>
-                    {usernameNumInput.label}:
-                    <input type={usernameNumInput.type} bind:value={usernameNumInput[usernameNumInput.id]} placeholder={usernameNumInput.example} requirement={usernameNumInput.required} oninput={(e) => dynamicAiParamUpdate(usernameNumInput.id, e.target.value)}/>
-                  </label>
-
                   </div>
 
                   <div class="column">
-                  <label>Password</label>
+                  <label><u>Password</u></label>
                   {#each passwordInput as param}
                       <label>{param.label}</label> 
                       <label class="toggle-switch">                
@@ -358,13 +426,13 @@ onDestroy(() => {
                     <input type={passwordLenInput.type} bind:value={passwordLenInput[passwordLenInput.id]} placeholder={passwordLenInput.example} requirement={passwordLenInput.required} oninput={(e) => dynamicAiParamUpdate(passwordLenInput.id, e.target.value)}/>
                   </label>
 
-                  <label>
-                    {passwordNumInput.label}:
-                    <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}/>
-                  </label>
-
                   </div>
                 </div>
+
+                <label style="padding-top: 5%;">
+                  Number of Credentials:
+                  <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => {dynamicAiParamUpdate(usernameNumInput.id, e.target.value); dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}}/>
+                </label>
 
             <button type="submit">Submit</button>
           </form>
@@ -385,6 +453,18 @@ onDestroy(() => {
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
         <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum2"]} Passwords: {aiParams["passNum2"]}</h3>
+        <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
+
+        <div style="padding-top:5%">
+          <input type="text" bind:value={wordlistName} placeholder="Ex: wordlist_name" requirement=false style="width:100%">
+        </div>
+
+        <div style="display:flex; justify-contents:center; padding-top:1%">
+          <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
+          <button onclick={(e) => {handleSave()}}>Save</button>
+          <button onclick={(e) => {exportWordlist()}}>Export</button>
+        </div>
+
         <div class="results-table">
         <table>
           <thead>
@@ -402,14 +482,12 @@ onDestroy(() => {
             {/each}
           </tbody>
         </table>
-        <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
-        <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
-        <button onclick={(e) => {handleSave()}}>Save Wordlist</button>
       </div>
       {/if}
 
       {#if showWordlists}
         <h2>AI Credential Generator Results</h2>
+        <button onclick={(e) => {wordlistToParams()}}>Back to Param Setup</button>
         <div class="results-table">
         <table>
           <thead>
@@ -422,12 +500,12 @@ onDestroy(() => {
             {#each Object.entries(uDict) as [filename, value]}
               <tr>
                 <td>{filename}</td>
-                <td><button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(value);wordlistToParams()}}>Delete</button></td>
+                <td><button id={filename} style="background-color:#007bff; border-radius:10px" onclick={(e) => exportFromDB(value)}>Export</button>
+                    <button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => handleDelete(value)}>Delete</button></td>
               </tr>
             {/each}
           </tbody>
         </table>
-        <button onclick={(e) => {wordlistToParams()}}>Back to Param Setup</button>
         </div>
       {/if}
 
