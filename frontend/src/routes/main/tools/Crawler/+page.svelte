@@ -187,7 +187,6 @@
       return;
     }
     paramsToCrawling();
-    startTimer();
     crawledPages = 0;
     totalPages = crawlerParams.max_pages || 0;
     activeController = new AbortController();
@@ -217,7 +216,6 @@
       alert("Failed to start crawler. Please try again.");
       resultsToParams();
     }
-    stopTimer();
   }
 
   // Update stopCrawler, pauseCrawler, resumeCrawler to stop polling
@@ -473,6 +471,13 @@ onMount(async () => {
   }
 });
 
+$: if (crawling) {
+  startTimer();
+}
+
+$: if (displayingResults) {
+  stopTimer();
+}
 </script>
 
 <div class="crawlerConfigPage">
