@@ -98,6 +98,9 @@ class ProjectManager:
     def get_all_scans(self, project_name):
         return self.neo4j.get_all_results_by_project(project_name)
     
+    def get_scan(self, project_name, type):
+        return self.neo4j.getScans(project_name, type)
+    
     def get_ai_results(self, project_name):
         return self.neo4j.get_ai_runs_with_results(project_name)    
     

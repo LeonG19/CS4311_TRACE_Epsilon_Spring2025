@@ -41,7 +41,6 @@ class Neo4jInteractive:
             existing = session.run(check_query, base=base_initials)
             existing_initials = [record["existing"] for record in existing]
 
-            # Generar iniciales únicas
             count = 1
             while new_initials in existing_initials:
                 initials, number = self.split_initials(base_initials)
@@ -53,14 +52,12 @@ class Neo4jInteractive:
             query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
             session.run(query_create, name=str(Name), initials=new_initials)
 
-            # Crear rol
             query_find_role = """
             MERGE (r:Role {role: $role})
             RETURN r
             """
             session.run(query_find_role, role=str(role).capitalize())
 
-            # Relación y permisos
             query_create_relation = """
             MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role})
             MERGE (u)-[:HAS_ROLE]->(r)
@@ -72,7 +69,16 @@ class Neo4jInteractive:
 
             return {"status": "success", "initials": new_initials}
 
-    
+    def getScans(self, project_name, type):
+        query = """
+        MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
+        WHERE toLower(s.type) = toLower($type)
+        RETURN s
+        """
+        with self.driver.session() as session:
+            result = session.run(query, project_name=project_name, type=type)
+            return [dict(record["s"]) for record in result]
+        
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
     # @returns: JSON format with success or error messages
