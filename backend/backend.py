@@ -459,20 +459,20 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     if (scans == []):
         print("no scans")
         return {"scans": False}
-    print(scans)
     urls = [
     scan["url"].strip()
     for scan in scans
     if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
     ]
+    print(urls)
 
     csv_path = "./csv_uploads/web_text.csv"
 
     print("Starting web scraper")
-    scrapper = WebScraper(urls)
+    scrapper = WebScraper(urls,  batch_size=20, concurrency=10)
 
     print("Starting generate csv")
-    scrapper.generate_csv(csv_path)
+    await scrapper.generate_csv(csv_path)
 
     print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
@@ -480,19 +480,19 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     
     global generator
     generator = CredentialGeneratorMDP(
-        csv_path= csv_path,
-        wordlist_path= file_word,
-        user_include_char = data["userChar"],
-        user_include_num = data["userNum"],
-        user_include_sym = data["userSymb"],
-        user_length = data["userLen"],
+        csv_path,
+        file_word,
+        data["userChar"],
+        data["userNum"],
+        data["userSymb"],
+        int(data["userLen"]),
 
-        pass_include_char = data["passChar"],
-        pass_include_num = data["passNum"],
-        pass_include_sym = data["passSymb"], 
-        pass_length = data["passLen"] 
+        data["passChar"],
+        data["passNum"],
+        data["passSymb"], 
+        int(data["passLen"]) 
     )
-    credentials = generator.generate_credentials(int(data["userNum"]))
+    credentials = generator.generate_credentials(int(data["userNum2"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
