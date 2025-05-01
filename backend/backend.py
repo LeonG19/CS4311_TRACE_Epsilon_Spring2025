@@ -457,20 +457,22 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     
     scans = await get_scans(data["projectName"])
     if (scans == []):
+        print("no scans")
         return {"scans": False}
     urls = [
     scan["url"].strip()
     for scan in scans
     if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
     ]
+    print(urls)
 
     csv_path = "./csv_uploads/web_text.csv"
 
     print("Starting web scraper")
-    scrapper = WebScraper(urls)
+    scrapper = WebScraper(urls,  batch_size=20, concurrency=10)
 
     print("Starting generate csv")
-    scrapper.generate_csv(csv_path)
+    await scrapper.generate_csv(csv_path)
 
     print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
@@ -478,19 +480,19 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     
     global generator
     generator = CredentialGeneratorMDP(
-        csv_path= csv_path,
-        wordlist_path= file_word,
-        user_include_char = data["userChar"],
-        user_include_num = data["userNum"],
-        user_include_sym = data["userSymb"],
-        user_length = data["userLen"],
+        csv_path,
+        file_word,
+        data["userChar"],
+        data["userNum"],
+        data["userSymb"],
+        int(data["userLen"]),
 
-        pass_include_char = data["passChar"],
-        pass_include_num = data["passNum"],
-        pass_include_sym = data["passSymb"], 
-        pass_length = data["passLen"] 
+        data["passChar"],
+        data["passNum"],
+        data["passSymb"], 
+        int(data["passLen"]) 
     )
-    credentials = generator.generate_credentials(10)
+    credentials = generator.generate_credentials(int(data["userNum2"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
@@ -763,13 +765,31 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 
+project_run_indices: dict[str, dict[str, int]] = {}
+
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
-    data = pm.get_ai_results(project_name)
-    uDict = {}
-    for i, dict in enumerate(data):
-        uDict[("wordlist_"+str(i))] = dict["run_id"]
-    print(uDict) 
+    data = pm.get_ai_results(project_name)     # list of dicts, each with "run_id"
+    # get-or-create the per-project map
+    mapping = project_run_indices.setdefault(project_name, {})
+
+    # figure out which run_ids we actually have this time
+    current_ids = [ str(item["run_id"]) for item in data ]
+
+    # assign new indices to any run_id we haven't seen before
+    #   next_index = 1 + the max of existing indices (or 0 if none)
+    next_index = max(mapping.values(), default=-1) + 1
+    for rid in current_ids:
+        if rid not in mapping:
+            mapping[rid] = next_index
+            next_index += 1
+
+    # now build your output dict, only including run_ids that still exist
+    uDict: dict[str, str] = {}
+    for rid, idx in sorted(mapping.items(), key=lambda kv: kv[1]):
+        if rid in current_ids:
+            uDict[f"wordlist_{idx}"] = rid
+
     return uDict
     
 @app.get("/delete_AI/{scan_id}")

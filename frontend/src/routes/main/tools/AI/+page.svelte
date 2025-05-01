@@ -56,8 +56,8 @@ onDestroy(() => {
   let usernameLenInput = { id: "userLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
   let passwordLenInput = { id: "passLen", type: "number", label: "Length", value: "", example: "Ex: 12", required: true }
 
-  let usernameNumInput = { id: "userNum", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
-  let passwordNumInput = { id: "passNum", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
+  let usernameNumInput = { id: "userNum2", type: "number", label: "Username Amount", value: "", example: "Ex: 25", required: true }
+  let passwordNumInput = { id: "passNum2", type: "number", label: "Password Amount", value: "", example: "Ex: 25", required: true }
   let projectName
   let wordlist;
   let uDict ={};
@@ -384,7 +384,7 @@ onDestroy(() => {
 
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
-        <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum"]} Passwords: {aiParams["passNum"]}</h3>
+        <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum2"]} Passwords: {aiParams["passNum2"]}</h3>
         <div class="results-table">
         <table>
           <thead>
