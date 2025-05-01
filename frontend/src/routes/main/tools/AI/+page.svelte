@@ -133,7 +133,7 @@ onDestroy(() => {
 
 
 
-  function saveWordlist(){
+  function exportWordlist(){
     let textContent = "Username,Password\n";
     textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
 
@@ -151,6 +151,10 @@ onDestroy(() => {
 
     // Cleanup
     URL.revokeObjectURL(url);
+  }
+
+  function exportFromDB(){
+
   }
 
   function dynamicAiParamUpdate(id, value) {
@@ -338,11 +342,6 @@ onDestroy(() => {
                     <input type={usernameLenInput.type} bind:value={usernameLenInput[usernameLenInput.id]} placeholder={usernameLenInput.example} requirement={usernameLenInput.required} oninput={(e) => dynamicAiParamUpdate(usernameLenInput.id, e.target.value)}/>
                   </label>
 
-                  <label>
-                    {usernameNumInput.label}:
-                    <input type={usernameNumInput.type} bind:value={usernameNumInput[usernameNumInput.id]} placeholder={usernameNumInput.example} requirement={usernameNumInput.required} oninput={(e) => dynamicAiParamUpdate(usernameNumInput.id, e.target.value)}/>
-                  </label>
-
                   </div>
 
                   <div class="column">
@@ -360,13 +359,12 @@ onDestroy(() => {
                     <input type={passwordLenInput.type} bind:value={passwordLenInput[passwordLenInput.id]} placeholder={passwordLenInput.example} requirement={passwordLenInput.required} oninput={(e) => dynamicAiParamUpdate(passwordLenInput.id, e.target.value)}/>
                   </label>
 
-                  <label>
-                    {passwordNumInput.label}:
-                    <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}/>
-                  </label>
-
                   </div>
                 </div>
+                <label style="padding-top: 5%;">
+                  Number of Credentials:
+                  <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => {dynamicAiParamUpdate(usernameNumInput.id, e.target.value); dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}}/>
+                </label>
 
             <button type="submit">Submit</button>
           </form>
@@ -405,8 +403,13 @@ onDestroy(() => {
           </tbody>
         </table>
         <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
-        <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
-        <button onclick={(e) => {handleSave()}}>Save Wordlist</button>
+
+        <div style="display:flex; justify-contents:center; padding-top:5%">
+          <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
+          <button onclick={(e) => {handleSave()}}>Save</button>
+          <button onclick={(e) => {exportWordlist()}}>Export</button>
+        </div>
+
       </div>
       {/if}
 
