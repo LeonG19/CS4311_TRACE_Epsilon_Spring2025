@@ -11,7 +11,7 @@ class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
             
     # Allows to create a Lead Analyst
     # @params Name: Name of the Analyst, ID: Id of the Analyst
@@ -584,9 +584,7 @@ class Neo4jInteractive:
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
             
-    def close(self):
-        if self.driver:
-            self.driver.close()
+    
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
