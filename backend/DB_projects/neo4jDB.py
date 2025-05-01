@@ -4,9 +4,9 @@ from datetime import datetime
 import ssl
 import uuid
 
-URI="neo4j://941e739f.databases.neo4j.io"
-User="neo4j"
-Password="Team_Blue"
+URI = "neo4j://941e739f.databases.neo4j.io"
+User = "neo4j"
+Password = "Team_Blue"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
@@ -17,28 +17,50 @@ class Neo4jInteractive:
     # @params Name: Name of the Analyst, ID: Id of the Analyst
     # @returns JSON with format of all analysts or status error JSON
     def create_Analyst(self, Name, role, initials):
-        # if we don't have all the parameters necessary to create an analyst we return a json with error status and erorr Message
-        if not all([Name, role, initials]) and Name.strip() != "":
-            return {"status": "failure", "error":"One or more parameters missing"}
-        # initial query to create user
-        query="MERGE (u: Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+        if not all([Name, role, initials]) or Name.strip() == "":
+            return {"status": "failure", "error": "One or more parameters missing"}
+
+        base_initials = initials.upper()
         
-        query_find_role = """
-        MERGE (r:Role {role: $role})
-        RETURN r
-        """
         with self.driver.session() as session:
-            # run query with params in safe way using $
-            result=session.run(query, name=str(Name), initials=str(initials).upper())
+            check_query = """
+            MATCH (a:Analyst)
+            WHERE a.initials STARTS WITH $base
+            RETURN a.initials AS existing
+            """
+            existing = session.run(check_query, base=base_initials)
+            existing_initials = [record["existing"] for record in existing]
+
+            # Generar iniciales únicas
+            new_initials = base_initials
+            count = 1
+            while new_initials in existing_initials:
+                new_initials = f"{base_initials}{count}"
+                count += 1
+
+            # Crear el analista
+            query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
+            session.run(query_create, name=str(Name), initials=new_initials)
+
+            # Crear rol
+            query_find_role = """
+            MERGE (r:Role {role: $role})
+            RETURN r
+            """
             session.run(query_find_role, role=str(role).capitalize())
-            # Depending if is Lead or regular Analyst the permissinons are set
-            query_create_relation = """MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role}) MERGE (u)-[:HAS_ROLE]->(r)
-                                    SET r.can_lock_unlock= CASE r.role WHEN 'Lead' THEN true ELSE false END, 
-                                    r.can_delete = CASE r.role WHEN 'Lead' THEN true ELSE false END,
-                                    r.can_create = CASE r.role WHEN 'Lead' THEN true else false END
-                                    """
-            session.run(query_create_relation, initials=str(initials).upper(), role=str(role).capitalize())
-            return {"status": "success"}
+
+            # Relación y permisos
+            query_create_relation = """
+            MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role})
+            MERGE (u)-[:HAS_ROLE]->(r)
+            SET r.can_lock_unlock = CASE r.role WHEN 'Lead' THEN true ELSE false END, 
+                r.can_delete      = CASE r.role WHEN 'Lead' THEN true ELSE false END,
+                r.can_create      = CASE r.role WHEN 'Lead' THEN true ELSE false END
+            """
+            session.run(query_create_relation, initials=new_initials, role=str(role).capitalize())
+
+            return {"status": "success", "initials": new_initials}
+
     
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
@@ -134,6 +156,13 @@ class Neo4jInteractive:
             query= """MATCH (p:Project {name: $project_name}) SET p.is_deleted= false, p.deleted_date=null """
             session.run(query, project_name=project_name)
             return {"status": "success"}
+        
+    def sanitize_value(value):
+        if isinstance(value, bool):
+            return str(value).lower()  # Converts True to "true" (unquoted in Cypher)
+        elif isinstance(value, str):
+            return value.replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+        return value
 
      # Allows the Database to receive a JSON and put all the information inside a node called Results
     # @params: json_data: json object, result_type: indicator for which type of result is
@@ -162,7 +191,7 @@ class Neo4jInteractive:
                     """
                     MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
-                    SET s.type = $type
+                    SET tolower(s.type) = LOWER($type)
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -170,19 +199,19 @@ class Neo4jInteractive:
                 )
                 
                 for result in results:
-                    result["type"] = result_type
+                    result["type"] = result_type.lower()
                     if "id" in result and isinstance(result["id"], int):
                         result["id"] = str(result["id"]) + "_" + run_id
                     else:
                         result["id"] = run_id
-                    if "error" in result and isinstance(result["error"], str):
+                    if "error" in result and isinstance(result["error"], str) and result["error"].lower() in ("true", "false"):
                         result["error"] = result["error"].lower() == "true"
 
 
-                    fields = ", ".join([f"{key}: ${key}" for key in result])
-                    print(fields)
-         
+                    sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
+                    fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
                     query = f"CREATE (r:Result {{ {fields} }})"
+         
 
                     try:
 
@@ -209,6 +238,7 @@ class Neo4jInteractive:
 
         return {"status": "success"}
     
+
     def get_all_results_by_project(self, project_name):
         query = """
         MATCH (p {name: $project_name})
@@ -553,7 +583,10 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
-
+            
+    def close(self):
+        if self.driver:
+            self.driver.close()
     
 def is_ip_valid(ip):
     parts = ip.split(".")  

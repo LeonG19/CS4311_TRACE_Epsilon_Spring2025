@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from DB_projects.ProjectManager import ProjectManager
 from DB_projects.neo4jDB import Neo4jInteractive
 from crawler import Crawler
-from typing import List, Optional
+from typing import List, Optional, Union
 import logging
 from fastapi.responses import StreamingResponse
 import json
@@ -16,15 +16,18 @@ import shutil
 import requests
 import neo4j.time
 import mdp3
+from fastapi.responses import JSONResponse
 from mdp3 import CredentialGeneratorMDP, WebScraper, CredentialMDP
 from typing import Dict, Optional
 import csv
 import sys
 from proxy_logic import handle_proxy_request, request_history, response_history
 from sqlInjectorManager import SQLInjectionManager
+from db_enumerator import DBEnumerator
 import mysql.connector
-
-from sqlInjectorManager import SQLInjectionManager
+import asyncio
+import uuid
+from io import BytesIO, StringIO
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
 
@@ -33,6 +36,7 @@ logger = logging.getLogger("asyncio")
 
 # creates endpoints
 app = FastAPI(title="Routes")
+
 
 class ProxyRequest(BaseModel):
     url: str
@@ -52,25 +56,40 @@ class CrawlRequest(BaseModel):
     delay: Optional[str | int] = ''
     proxy: str = ''
 
-crawler = None
+jobs = {}  # used for persistance if we go back to the tools menus
+
 '''
  for now basically just launches the crawl based on the form submitted by the user
 '''
 @app.post("/crawler")
 async def launchCrawl(request: CrawlRequest):
-    global crawler
+    print("hello")
+    global jobs
+    job_id = str(uuid.uuid4())
+    print(job_id)
     crawler = Crawler()
+    jobs[job_id] = {
+        'crawler': crawler,
+        'status': 'running',
+        'results': []
+    }
+    print(jobs[job_id])
     params_dict = request.model_dump()
     logger.info(request)
-    
-    async def crawl_stream():
+    # Start the crawl in the background
+    async def crawl_task():
         try:
+            print("inside try")
             async for update in crawler.start_crawl(params_dict):
-                yield json.dumps(update) + "\n"
+                jobs[job_id]['results'].append(update)
+            jobs[job_id]['status'] = 'finished'
         except Exception  as e:
             logger.error(f"Error in crawl stream: {e}", exc_info=True)
-    
-    return StreamingResponse(crawl_stream(), media_type="application/json")
+            jobs[job_id]['status'] = 'error'
+        # Schedule the crawl task
+    asyncio.create_task(crawl_task())
+        # Return the job_id immediately
+    return {"job_id": job_id}
 
 @app.post("/validate_url")
 async def validate_url(request: CrawlRequest):
@@ -96,29 +115,66 @@ async def validate_url(request: CrawlRequest):
 
 # function that stops the execution of crawler when button is clicked
 @app.post("/stop_crawler")
-async def stopCrawler():
-    global crawler
-    if crawler:
-        crawler.stop_crawl()
-        crawler = Crawler()
-        return {"message" : "Crawl stopping requested"}
-    return {"message" : "nothing to stop"}
+async def stopCrawler(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].stop_crawl()
+        job['status'] = 'finished'
+        return {"status": "finished", "results": job['results']}
+    return {"message": "nothing to stop"}
 
 @app.post("/pause_crawler")
-async def pauseCrawler():
-    global crawler
-    if crawler:
-        crawler.pause_crawl()
-        return {"message" :" Crawler Paused"}
+async def pauseCrawler(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].pause_crawl()
+        return {"message": "Crawler Paused"}
     return {"message": "nothing to pause"}
 
 @app.post("/resume_crawler")
-async def resumeCrawl():
-    global crawler
-    if crawler:
-        crawler.resume_crawl()        
-        return {"message" :" Crawler Resumed"}
+async def resumeCrawl(job_id: str):
+    job = jobs.get(job_id)
+    if job:
+        job['crawler'].resume_crawl()
+        return {"message": "Crawler Resumed"}
     return {"message": "nothing to resume"}
+
+#continuous check of current job to see if the test is ongoing (might be useful for two computers at once)
+@app.get("/crawler_status")
+async def get_crawler_status(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return {"status": "not_found", "results": []}
+    crawler = job['crawler']
+    if getattr(crawler, "is_complete", True):
+        return {"status": "finished", "results": job['results']}
+    else:
+        return {"status": "running", "results": job['results']}
+
+# ai helped with this, used for the continuous streaming of results even wehn away from page and rest when back into the page
+@app.get("/crawler_stream")
+async def get_crawler_stream(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        return StreamingResponse((line for line in [json.dumps({"error": "No such job"}) + "\n"]), media_type="application/json")
+    crawler = job['crawler']
+    async def stream_updates():
+        try:
+            current_count = 0
+            while True:
+                while getattr(crawler, "pause_flag", False):
+                    await asyncio.sleep(0.5)
+                if len(job['results']) > current_count:
+                    for i in range(current_count, len(job['results'])):
+                        yield json.dumps(job['results'][i]) + "\n"
+                    current_count = len(job['results'])
+                if getattr(crawler, "is_complete", True):
+                    yield json.dumps({"crawl_complete": True}) + "\n"
+                    break
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            yield json.dumps({"error": str(e)}) + "\n"
+    return StreamingResponse(stream_updates(), media_type="application/json")
 
 # Add fuzzer request model --- FUZZER
 class FuzzRequest(BaseModel):
@@ -260,22 +316,24 @@ def find_parent(data, current_item):
 class BruteForcerRequest(BaseModel):
     target_url: str
     word_list: Optional[str] = ''
-    hide_status: Optional[str] = ''
-    show_status: Optional[str] = ''
-    filter_by_content_length: Optional[str | int] = ''
-    additional_parameters: Optional[str] = ''
+    hide_status: Union[List[int], str] = []              # allow [404,500] or "404,500"
+    show_status: Union[List[int], str] = []              # same here
+    filter_by_content_length: Optional[Union[int, str]] = None
+    additional_param: Optional[str] = ''
     show_results: bool = True  # New parameter for toggling result visibility
 
 # Global bruteforcer instance
 brute_forcer = None
 
-# Add BruteForcer endpoint
+# Add BruteForcer endpoint--BRUTEFORCE
 @app.post("/bruteforcer")
 async def launchBruteForcer(request: BruteForcerRequest):
     global brute_forcer
     brute_forcer = BruteForcer()
     params_dict = request.model_dump()
     logger.info(request)
+    logger.debug(f"BruteForcer parameters: {params_dict}")
+
     
     async def brute_force_stream():
         try:
@@ -283,7 +341,6 @@ async def launchBruteForcer(request: BruteForcerRequest):
                 yield json.dumps(update) + "\n"
         except Exception as e:
             logger.error(f"Error in brute force stream: {e}", exc_info=True)
-    
     
     return StreamingResponse(brute_force_stream(), media_type="application/json")
 
@@ -307,6 +364,37 @@ async def upload_wordlist(file: UploadFile = File(...)):
         logger.error(f"Error uploading wordlist file {str(e)}")
         return {"error !": str(e)}, 500
     
+# control endpoints for the BruteForce
+@app.post("/stop_brute")
+async def stopBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.stop_scan()
+        return {"message": "BruteForce stopping requested"}
+    return {"message": "No active BruteForce to stop"}
+
+@app.post("/pause_brute")
+async def pauseBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.pause_scan()
+        return {"message": "BruteForce paused"}
+    return {"message": "No active BruteForce to pause"}
+
+@app.post("/resume_brute")
+async def resumeBrute():
+    global brute_forcer
+    if brute_forcer:
+        brute_forcer.resume_scan()
+        return {"message": "BruteForce resumed"}
+    return {"message": "No active BruteForce to resume"}
+  
+
+class AIParams(BaseModel):
+    params: Dict[str, str | bool | int] = Field(default_factory=dict)
+
+
+
 def extract_services_sites(json_paths: list[str],
                            csv_path: str = 'services_sites/services_sites.csv') -> bool:
     # Ensure the folder for the CSV exists
@@ -346,16 +434,13 @@ def extract_services_sites(json_paths: list[str],
     except Exception as e:
         print(f"Unexpected error while writing CSV: {e}")
         return False
-  
-
-class AIParams(BaseModel):
-    params: Dict[str, str | bool | int] = Field(default_factory=dict)
 
 
 @app.post("/generate-credentials")
 async def generate_credentials_endpoint(file: UploadFile = File(None), data: str = Form(...)):
     #logging.info(f"Received credential generation request: {req}")
     file_word = ""
+    data = json.loads(data)
     try:
         if file:
             # Save the uploaded file
@@ -367,48 +452,77 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
  
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-    craw_state = extract_services_sites([
-    'outputs_crawler/crawl_results.json',      # required
-    'outputs_bruteforcer/brute_force_results.json',         # optional
-    'outputs_fuzzer/fuzz_results.json'                 # optional
-    ])
+    print(data)
 
-    if (craw_state == False):
-        return {"crawler": craw_state}
-       
-    urls = mdp3.load_urls_from_csv("services_sites/services_sites.csv")
+    
+    scans = await get_scans(data["projectName"])
+    if (scans == []):
+        print("no scans")
+        return {"scans": False}
+    urls = [
+    scan["url"].strip()
+    for scan in scans
+    if isinstance(scan, dict) and (scan.get("url") or scan.get("URL"))
+    ]
+    print(urls)
+
     csv_path = "./csv_uploads/web_text.csv"
 
     print("Starting web scraper")
-    scrapper = WebScraper(urls)
+    scrapper = WebScraper(urls,  batch_size=20, concurrency=10)
 
     print("Starting generate csv")
-    scrapper.generate_csv(csv_path)
+    await scrapper.generate_csv(csv_path)
 
     print("Starting nlp subroutine")
     mdp3.nlp_subroutine(csv_path)
 
-    data = json.loads(data)
+    
     global generator
     generator = CredentialGeneratorMDP(
-        csv_path= csv_path,
-        wordlist_path= file_word,
-        user_include_char = data["userChar"],
-        user_include_num = data["userNum"],
-        user_include_sym = data["userSymb"],
-        user_length = data["userLen"],
+        csv_path,
+        file_word,
+        data["userChar"],
+        data["userNum"],
+        data["userSymb"],
+        int(data["userLen"]),
 
-        pass_include_char = data["passChar"],
-        pass_include_num = data["passNum"],
-        pass_include_sym = data["passSymb"], 
-        pass_length = data["passLen"] 
+        data["passChar"],
+        data["passNum"],
+        data["passSymb"], 
+        int(data["passLen"]) 
     )
-    credentials = generator.generate_credentials(10)
+    credentials = generator.generate_credentials(int(data["userNum2"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
+
     return {"credentials": credentials}
+    
+
+
+
+def creds_to_uploadfile(creds) -> UploadFile:
+    # 1) Create a text buffer that won't mangle newlines
+    text_buf = StringIO(newline="")
+
+    # 2) Write CSV into it (no newline kw on writer)
+    writer = csv.writer(text_buf)
+    writer.writerow(["username", "password"])
+    for u, p in creds:
+        writer.writerow([u, p])
+
+    # 3) Get its UTF-8 bytes and wrap in a BytesIO
+    data = text_buf.getvalue().encode("utf-8")
+    byte_buf = BytesIO(data)
+
+    # 4) Finally, build the UploadFile
+    return UploadFile(
+        filename="credentials.txt",
+        file=byte_buf,
+     
+    )
+
 
 # control endpoints for the fuzzer
 @app.post("/stop_AI")
@@ -457,12 +571,13 @@ class FilenameInput(BaseModel):
     filename: str
 
 @app.post("/delete_userpassword")
-async def delete_userpassword(data: FilenameInput):
+async def delete_userpassword(data: str = Form(...)):
     
-    filename = data.filename
+    filename = data.strip('"\'')
     print(f"Got filename: {filename}")
 
-    for root, dirs, files in os.walk("/user_passwords_uploads"):
+    for root, dirs, files in os.walk("./user_passwords_uploads"):
+        print(files)
         if filename in files:
             file_path = os.path.join(root, filename)
             os.remove(file_path)
@@ -592,8 +707,16 @@ async def create_project(project_name: str = Form(...),
     return {"status": "success"}
 
 @app.get("/getResult/{projectName}")
-async def get_scans(projectName: str):
+async def get_all_scans(projectName: str):
     return pm.get_all_scans(projectName)
+
+@app.get("/getScan/{projectName}/{scanType}")
+async def get_scan(projectName: str, scanType: str):
+    return pm.get_scan(projectName, scanType)
+
+@app.get("/getScanResults/{scanID}")
+async def getResults_perScan(scanID: str):
+    return pm.getResults_perScan(scanID)
 
 
 @app.post("/analyst/{initials}/")
@@ -625,6 +748,10 @@ async def submit_results(result_type, project_name , request: Request):
     if not [result_type,project_name]:
         return {"status": "failure", "error": "Missing result_type or project_name"}
     try:
+        # Convert Pydantic models to dictionary for processing
+        print("blah blah blah blah")
+        print("in endpoint, printing result_type", result_type , type(result_type))
+        print("project", project_name)
         test_data = await request.json()
         pm.submit_results(test_data, result_type, project_name)
     except Exception as e:
@@ -643,20 +770,43 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
             result={header[0].strip(): values[0].strip(), header[1].strip(): values[1].strip()}
             results.append(result)
         pm.submit_results(results, result_type, project_name)    
+        return results
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
     
 
+project_run_indices: dict[str, dict[str, int]] = {}
+
 @app.get("/ai_results/{project_name}")
 async def get_ai_results(project_name: str):
-    return pm.get_ai_results(project_name)
+    data = pm.get_ai_results(project_name)     # list of dicts, each with "run_id"
+    # get-or-create the per-project map
+    mapping = project_run_indices.setdefault(project_name, {})
 
+    # figure out which run_ids we actually have this time
+    current_ids = [ str(item["run_id"]) for item in data ]
+
+    # assign new indices to any run_id we haven't seen before
+    #   next_index = 1 + the max of existing indices (or 0 if none)
+    next_index = max(mapping.values(), default=-1) + 1
+    for rid in current_ids:
+        if rid not in mapping:
+            mapping[rid] = next_index
+            next_index += 1
+
+    # now build your output dict, only including run_ids that still exist
+    uDict: dict[str, str] = {}
+    for rid, idx in sorted(mapping.items(), key=lambda kv: kv[1]):
+        if rid in current_ids:
+            uDict[f"wordlist_{idx}"] = rid
+
+    return uDict
+    
 @app.get("/delete_AI/{scan_id}")
 async def delete_ai_results(scan_id: str):
     result = pm.delete_ai_results(scan_id)
     return result
     
-
 @app.post("/project_folder/{folder_name}")
 async def get_projects_in_folder(folder_name: str):
     result = pm.get_projects_in_folder(folder_name)
@@ -688,13 +838,14 @@ async def sql_inject(req: SQLRequest):
         headers=req.headers,
         enum_level=req.enum_level
     )
-    return results
+    return JSONResponse(content=results)
 
 import mysql.connector  # Make sure you pip install mysql-connector-python
 from fastapi import HTTPException
 
 class DBEnumerator:
     def enumerate(self, host, port, username, password):
+        conn = None
         try:
             conn = mysql.connector.connect(
                 host=host,
@@ -731,13 +882,20 @@ class DBEnumerator:
             }
         except mysql.connector.Error as err:
             raise HTTPException(status_code=500, detail=f"MySQL Error: {err}")
+
         finally:
-            if conn.is_connected():
-                cursor.close()
-                conn.close()
+            try:
+                if conn is not None and conn.is_connected():
+                    cursor.close()
+                    conn.close()
+            except Exception as e:
+                pass 
                 ''
 
-@app.post("/api/db_enum")
+                # After the DBEnumerator class definition or import
+db_enumerator = DBEnumerator()
+
+@app.post("/api/db_enumerator")
 async def db_enum_endpoint(request: Request):
     body = await request.json()
     host = body.get('host')
@@ -745,7 +903,7 @@ async def db_enum_endpoint(request: Request):
     username = body.get('username')
     password = body.get('password')
 
-    return db_enum.enumerate(host, port, username, password)
+    return db_enumerator.enumerate(host, port, username, password)
 
 # helps frontend and backend communicate (different ports for fastAPI and sveltekit)
 app.add_middleware(
@@ -764,13 +922,13 @@ n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j",
 
 #Create new Initials directly into the db.
 #THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
-@app.post("/create_initials/{initials}/{type}")
-async def create_initials(initials:str, type:int):
+@app.post("/create_initials/{initials}/{type}/{name}")
+async def create_initials(initials:str, type:int, name:str):
     role="Analyst"
     
     if type == 1:
         role = "Lead"
     
-    result=n4ji.create_Analyst(" ", role, initials) 
+    result=n4ji.create_Analyst(name, role, initials) 
     
     return result

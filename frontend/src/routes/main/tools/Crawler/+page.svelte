@@ -57,23 +57,13 @@
     direction: 'asc'
   };
 
-  // Start timer function
-  // function startTimer() {
-  //   startTime = Date.now();
-  //   timerInterval = setInterval(() => {
-  //     const seconds = Math.floor((Date.now() - startTime) / 1000);
-  //     elapsedTime = `${seconds}s`;
-  //   }, 1000);
-  // }
+  let jobId = null;
+  let isManualStop = false;
 
-  // function stopTimer() {
-  //   clearInterval(timerInterval);
-  // }
-
-  onMount(async()=>{
-    projectName= sessionStorage.getItem('name');
-    console.log("Project Name:", projectName);
-  })
+  // localstorage check
+  function isBrowser() {
+    return typeof window !== 'undefined';
+  }
 
   function startTimer() {
     startTime = Date.now();
@@ -101,6 +91,7 @@
   }
 
   function crawlingToResults() {
+    acceptingParams = false;
     crawling = false;
     displayingResults = true;
   }
@@ -126,34 +117,169 @@
     crawlerParams[id] = value;
   }
 
+  // continuous streaming of crawl results from different pages (allows to pick up where left off in crawler file)
+  let pollingInterval = null;
+
+  function startPolling() {
+    stopPolling(); // Ensure no duplicate intervals
+    pollingInterval = setInterval(async () => {
+      if (!jobId || jobId === 'null') return;
+      const response = await fetch(`http://localhost:8000/crawler_status?job_id=${jobId}`);
+      if (response.ok) {
+        const status = await response.json();
+        crawlResult = status.results || [];
+        processedRequests = crawlResult.length;
+        filteredRequests = crawlResult.filter((item) => !item.error).length;
+        if (status.status === 'finished') {
+          stopPolling();
+          try{
+            const response = await fetch(`http://localhost:8000/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(crawlResult)
+            });
+            console.log("sent to db")
+          } catch (error) {
+            alert(`An error occurred during result upload to db: ${error.message}`);
+            console.error('Error during result upload to db:', error);
+            return;
+          }
+
+          crawlingToResults();
+          if (isBrowser()) sessionStorage.removeItem('crawler_job_id');
+          jobId = null;
+        }
+      }
+    }, 500);
+  }
+
+  function stopPolling() {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
+  // Update handleSubmit to use polling
+  async function handleSubmit() {
+    resetTimer();
+    if (!validateParams()) {
+      return;
+    }
+    try {
+      const validateURL = await fetch('http://localhost:8000/validate_url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: crawlerParams.url })
+      });
+      const validationResponse = await validateURL.json();
+      if (!validateURL.ok || !validationResponse.valid) {
+        alert(`URL validation failed: ${validationResponse.message || 'Unknown error'}`);
+        return;
+      }
+    } catch (error) {
+      alert(`An error occurred during URL validation: ${error.message}`);
+      console.error('Error during URL validation:', error);
+      return;
+    }
+    paramsToCrawling();
+    startTimer();
+    crawledPages = 0;
+    totalPages = crawlerParams.max_pages || 0;
+    activeController = new AbortController();
+    try {
+      const response = await fetch('http://localhost:8000/crawler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(crawlerParams),
+        signal: activeController.signal
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.job_id) {
+        throw new Error('No job ID received from server');
+      }
+      jobId = data.job_id;
+      if (isBrowser()) {
+        sessionStorage.setItem('crawler_job_id', jobId);
+      }
+      startPolling();
+    } catch (error) {
+      console.error("Error starting crawler:", error);
+      alert("Failed to start crawler. Please try again.");
+      resultsToParams();
+    }
+    stopTimer();
+  }
+
+  // Update stopCrawler, pauseCrawler, resumeCrawler to stop polling
   async function stopCrawler() {
+    isManualStop = true;
+    stopPolling();
     if (activeController) {
       activeController.abort();
     }
-    const response = await fetch('http://localhost:8000/stop_crawler', {
+    if (!jobId || jobId === 'null') return;
+    const response = await fetch(`http://localhost:8000/stop_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
+    try{
+      const response = await fetch(`http://localhost:8000/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(crawlResult)
+      });
+      console.log("sent to db")
+    } catch (error) {
+      alert(`An error occurred during result upload to db: ${error.message}`);
+      console.error('Error during result upload to db:', error);
+      return;
+    }
     if (response.ok) {
-      console.log("Stopped successfully");
+      if (jobId && jobId !== 'null') {
+        let statusResp = await fetch(`http://localhost:8000/crawler_status?job_id=${jobId}`);
+        if (statusResp.ok) {
+          const status = await statusResp.json();
+          crawlResult = status.results || [];
+          processedRequests = crawlResult.length;
+          filteredRequests = crawlResult.filter((item) => !item.error).length;
+        }
+      }
+      if (isBrowser()) {
+        sessionStorage.removeItem('crawler_job_id');
+      }
+      jobId = null;
+      crawlingToResults();
     } else {
       console.error("Error stopping crawler:", response.statusText);
     }
+    isManualStop = false;
   }
 
   async function pauseCrawler(){
     pauseToResumeButton();
     stopTimer();
-    const response = await fetch('http://localhost:8000/pause_crawler', { //This is where the params are being sent
+    stopPolling();
+    if (!jobId || jobId === 'null') return;
+    const response = await fetch(`http://localhost:8000/pause_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
     if (response.ok) {
       console.log("Paused successfully");
     } else {
@@ -164,15 +290,15 @@
   async function resumeCrawler(){
     resumeToPauseButton();
     startTimer();
-    const response = await fetch('http://localhost:8000/resume_crawler', { //This is where the params are being sent
+    if (!jobId || jobId === 'null') return;
+    const response = await fetch(`http://localhost:8000/resume_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
     if (response.ok) {
-      console.log("resumed successfully");
+      startPolling();
     } else {
       console.error("Error resuming crawler:", response.statusText);
     }
@@ -208,94 +334,6 @@
     }
 
     return isValid;
-  }
-
-  // This is for inputs to be sent to the backend for computation.
-  async function handleSubmit() {
-    resetTimer();
-    // Validate the input before proceeding
-    if (!validateParams()) {
-      return; // Do not proceed if validation fails
-    }
-
-    // This try catch is to validate whether the URL is valid or not
-    try {
-      const validateURL = await fetch('http://localhost:8000/validate_url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: crawlerParams.url })
-      });
-
-      const validationResponse = await validateURL.json();
-
-      // if the URL is not valid, show an error message
-      if (!validateURL.ok || !validationResponse.valid) {
-        alert(`URL validation failed: ${validationResponse.message || 'Unknown error'}`);
-        return;
-      }
-    }
-    catch (error) {
-      alert(`An error occurred during URL validation: ${error.message}`);
-      console.error('Error during URL validation:', error);
-      return;
-    }
-
-
-    paramsToCrawling();
-    startTimer();
-    crawledPages = 0;
-    totalPages = crawlerParams.max_pages || 0;
-    activeController = new AbortController();
-
-    const response = await fetch('http://localhost:8000/crawler', { //This is where the params are being sent
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(crawlerParams),
-      signal: activeController.signal
-    });
-
-    if (response.ok) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-
-      while (!done) {
-        try {
-          if (activeController.signal.aborted) {
-            break;
-          }
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-          if (value) {
-            const chunk = decoder.decode(value, { stream: true });
-            const updates = chunk.split('\n').filter(Boolean).map(JSON.parse);
-            crawlResult = [...crawlResult, ...updates];
-            crawledPages += updates.length; // Update progress
-
-            processedRequests += updates.length;
-            filteredRequests = crawlResult.filter((item) => !item.error).length;
-            requestsPerSecond = (processedRequests / ((Date.now() - startTime) / 1000)).toFixed(2);
-          }
-        } catch (err) {
-          if (err.name === 'AbortError') {
-            done = true;
-            console.log("real-time results stopped to end crawl");
-          }
-          else {
-            console.error('Error: ', err);
-          }
-        }
-      }
-
-      crawlingToResults();
-    } else {
-      console.error("Error starting crawler:", response.statusText);
-    }
-    stopTimer();
   }
 
   // Sorting function
@@ -374,6 +412,66 @@ function urlToFilename(url) {
     .toLowerCase();                 // optional: lowercase for consistency
 }
 
+// persistance logic (helped by ai)
+onMount(async () => {
+  if (isBrowser()) {
+    jobId = sessionStorage.getItem('crawler_job_id');
+  }
+  if (jobId && jobId !== 'null') {
+    const response = await fetch(`http://localhost:8000/crawler_status?job_id=${jobId}`);
+    if (response.ok) {
+      const status = await response.json();
+      //running page if running
+      if (status.status === "running") {
+        crawlResult = status.results;
+        processedRequests = crawlResult.length;
+        filteredRequests = crawlResult.filter((item) => !item.error).length;
+        acceptingParams = false;
+        crawling = true;
+        displayingResults = false;
+        startPolling();
+        //results page if done
+      } else if (status.status === "finished" && status.results.length > 0) {
+        crawlResult = status.results;
+        processedRequests = crawlResult.length;
+        filteredRequests = crawlResult.filter((item) => !item.error).length;
+        acceptingParams = false;
+        crawling = false;
+        displayingResults = true;
+        if (isBrowser()) {
+          sessionStorage.removeItem('crawler_job_id');
+        }
+        jobId = null;
+      } else {
+        // Not started or no results: show params/input form
+        if (isBrowser()) {
+          sessionStorage.removeItem('crawler_job_id');
+        }
+        jobId = null;
+        acceptingParams = true;
+        crawling = false;
+        displayingResults = false;
+        crawlResult = [];
+      }
+    } else {
+      // On error, also show params/input form
+      if (isBrowser()) {
+        sessionStorage.removeItem('crawler_job_id');
+      }
+      jobId = null;
+      acceptingParams = true;
+      crawling = false;
+      displayingResults = false;
+      crawlResult = [];
+    }
+  } else {
+    // No job, show input form
+    acceptingParams = true;
+    crawling = false;
+    displayingResults = false;
+    crawlResult = [];
+  }
+});
 
 </script>
 

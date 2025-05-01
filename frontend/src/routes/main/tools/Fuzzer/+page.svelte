@@ -47,11 +47,11 @@
   // Sorting configuration
   let sortConfig = { column: "", direction: 'asc' };
 
-  onMount(async()=>{
+  /*onMount(async()=>{
     projectName= sessionStorage.getItem('name');
     console.log("Project Name:", projectName);
   })
-
+*/
   // Navigation functions
   function goBack() { window.location.href = "/main/tools"; }
   
@@ -249,6 +249,34 @@
     }
   }
 
+  onMount(() => {
+  projectName = sessionStorage.getItem('name');
+  console.log("Project Name:", projectName);
+  fuzzerParams.project_name = projectName;
+});
+
+async function submitfuzzerResultsToProject() {
+    try {
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/fuzzer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(results),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`Saved ${body.inserted} results for ${projectName}`);
+      } else {
+        console.error("Save failed:", body.detail || body.error);
+      }
+    } catch (e) {
+      console.error("Network error on submit:", e);
+    }
+  }
+
+
   // File handle
   async function handleFile(event) {
     const fileInput = event.target;
@@ -440,6 +468,7 @@
         
         if (done) {
           stopTimer();
+          await submitfuzzerResultsToProject();
           break;
         }
         
