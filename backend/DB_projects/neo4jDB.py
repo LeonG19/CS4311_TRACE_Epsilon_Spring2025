@@ -5,9 +5,9 @@ import ssl
 import uuid
 import re
 
-URI="bolt://127.0.0.1:7687"
+URI="neo4j://941e739f.databases.neo4j.io"
 User="neo4j"
-Password="testpassword"
+Password="Team_Blue"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
@@ -113,43 +113,16 @@ class Neo4jInteractive:
     #         description: Some text to describe the project, MachineIP: the ip associated to that project
     #         status: current status of the project, list_files: list of all the files that the project have
     #@returns: JSON format of with success or error messages
-    def create_project(self, Project_Name, start_date, end_date, description, list_files, local_file_path):
-        query = """
-        CREATE (p:Project {
-            name: $name, 
-            locked: false, 
-            Stamp_Date: datetime($Stamp_Date), 
-            start_date: $start_date, 
-            end_date: $end_date, 
-            description: $description, 
-            MachineIP: "0.0.0.0", 
-            Status: "Active", 
-            files: $files, 
-            local_file_path: $local_file_path, 
-            last_edit_date: datetime($last_edit), 
-            is_deleted: false
-        })
-        """
-        # Ensure list_files is a list
-        files = list_files if isinstance(list_files, list) else []
-        
-        try:
-            with self.driver.session() as session:
-                session.run(
-                    query,
-                    name=str(Project_Name),
-                    start_date=str(start_date),
-                    end_date=str(end_date),
-                    Stamp_Date=start_date,
-                    description=str(description),
-                    files=files,
-                    local_file_path=str(local_file_path),
-                    last_edit=start_date
-                )
+    def create_project(self, Project_Name, start_date, end_date, description, list_files):
+        query = """CREATE (p:Project {name: $name, locked: false, 
+               Stamp_Date: datetime($Stamp_Date), start_date: $start_date,  end_date: $end_date, 
+               description: $description, MachineIP: "0.0.0.0", Status: "Active", 
+               files: $files, last_edit_date: datetime($last_edit), is_deleted: false})"""
+
+        with self.driver.session() as session:
+            session.run(query, name=str(Project_Name), start_date=str(start_date), end_date=str(end_date), Stamp_Date=start_date, description=str(description), files=[]if list_files=="" else list(list_files), last_edit=start_date)
             return {"status": "success"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-    
+        
     def relationship_results(self, project_name, run_id):
         if not all([project_name, id]):
             return {"status": "failure", "error":"One or more parameters missing"}
@@ -601,12 +574,7 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
-<<<<<<< HEAD
 
-=======
-            
-    
->>>>>>> 7fc256847497f85aab3ef4a1c42ee74980e700ce
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
