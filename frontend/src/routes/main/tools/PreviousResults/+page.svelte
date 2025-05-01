@@ -3,9 +3,22 @@
   let typeOfTool
 
   onMount(async () => {
-    typeOfTool = sessionStorage.getItem("prev_results_type")
-    console.log(typeOfTool)
-
+    typeOfTool = sessionStorage.getItem("prev_results_type");
+    console.log(typeOfTool);
+    console.log(sessionStorage.getItem("name"));
+    try{
+      const response = await fetch(`http://localhost:8000/getScan/${sessionStorage.getItem('name')}/${typeOfTool}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log(response)
+    } catch (error) {
+      alert(`An error occurred during retreival of scans: ${error.message}`);
+      console.error('Error during retreival of scans:', error);
+      return;
+    }
   });
 
 </script>

@@ -89,7 +89,12 @@ class ProjectManager:
         return self.neo4j.get_folders()
     
     def submit_results(self, json_data, result_type, project_name):
+        print(result_type)
+        print(project_name)
+        print(json_data)
         result = self.neo4j.process_Response(json_data, result_type, project_name)
+        print("after result")
+        print(result)
         return result.get("status") == "success" if isinstance(result, dict) else True
     
     def get_projects_in_folder(self, folder_name):
