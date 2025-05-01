@@ -601,7 +601,12 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
+<<<<<<< HEAD
 
+=======
+            
+    
+>>>>>>> 7fc256847497f85aab3ef4a1c42ee74980e700ce
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
