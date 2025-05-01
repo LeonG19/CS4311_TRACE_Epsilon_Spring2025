@@ -163,6 +163,7 @@
   }
 
   async function exportFromDB(file){
+    console.log(projectName, file);
     try {
       const response = await fetch(("http://localhost:8000/export_AI/" + projectName + "/" + file), {
         method: "GET"
@@ -181,7 +182,7 @@
 
         // CHANGE textContent to DATA
         let textContent = "Username,Password\n";
-        textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
+        textContent += data.map(([username, password]) => `${username},${password}`).join("\n");
 
         // Create a Blob and Object URL
         const blob = new Blob([textContent], { type: "text/plain" });

@@ -495,7 +495,17 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
     print(credentials)
     return {"credentials": credentials}
     
-
+@app.get("/export_AI/{project_name}/{scan_id}")
+async def export_AI(scan_id: str, project_name:str):
+    data = pm.get_ai_results(project_name)
+    for run in data:
+        if run.get("run_id") == scan_id:
+            return [
+                (entry.get("Username", ""), entry.get("Password", ""))
+                for entry in run.get("results", [])
+            ]
+    # if no matching run_id found, return empty list
+    return []
 
 
 def creds_to_uploadfile(creds) -> UploadFile:
