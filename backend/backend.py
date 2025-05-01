@@ -767,7 +767,6 @@ async def submit_txt_results(result_type, project_name, file: UploadFile=File(..
         return results
     except Exception as e:
         return {"status": "failure", "error": f"Export failed: {str(e)}"}
-    
 
 project_run_indices: dict[str, dict[str, int]] = {}
 @app.get("/ai_results/{project_name}")
@@ -793,6 +792,8 @@ async def get_ai_results(project_name: str):
     for rid, idx in sorted(mapping.items(), key=lambda kv: kv[1]):
         if rid in current_ids:
             uDict[f"wordlist_{idx}"] = rid
+
+    return uDict
     
 @app.get("/delete_AI/{scan_id}")
 async def delete_ai_results(scan_id: str):
