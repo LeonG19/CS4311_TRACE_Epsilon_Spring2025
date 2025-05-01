@@ -488,7 +488,7 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
         data["passSymb"],
         int(data["passLen"])
     )
-    credentials = generator.generate_credentials(10)
+    credentials = generator.generate_credentials(int(data["userNum2"]))
     print("\nGenerated Credentials:")
     for username, password in credentials:
         print(f"Username: {username}, Password: {password}")
