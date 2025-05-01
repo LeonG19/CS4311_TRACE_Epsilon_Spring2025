@@ -3,41 +3,43 @@
   import { preventDefault } from "svelte/legacy";
 
   import { onDestroy } from 'svelte';
-
-let time = 0; // time in milliseconds
-let displayTime = '0.00';
-let finalTime = '0.00';
-let interval;
-
-function startTimer() {
-  time = 0;
-  clearInterval(interval);
-  interval = setInterval(() => {
-    time += 10;
-    displayTime = (time / 1000).toFixed(2);
-  }, 10);
-}
-
-function stopTimer() {
-  clearInterval(interval);
-}
-
-$: if (generating) {
-  startTimer();
-} else {
-  stopTimer();
-}
-
-$: if (displayingResults) {
-  finalTime = displayTime;
-} else {
-}
-
-onDestroy(() => {
-  clearInterval(interval);
-});
-
   import {onMount} from "svelte";
+
+  let time = 0; // time in milliseconds
+  let displayTime = '0.00';
+  let finalTime = '0.00';
+  let interval;
+
+  function startTimer() {
+    time = 0;
+    clearInterval(interval);
+    interval = setInterval(() => {
+      time += 10;
+      displayTime = (time / 1000).toFixed(2);
+    }, 10);
+  }
+
+  function stopTimer() {
+    clearInterval(interval);
+  }
+
+  $: if (generating) {
+    startTimer();
+  } else {
+    stopTimer();
+  }
+
+  $: if (displayingResults) {
+    finalTime = displayTime;
+  } else {
+  }
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+
+  let wordlistName = '';
+
   let err = ""
   let wordlistInput = { id: "wordlist", type: "file", accept: ".txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true }
 
@@ -134,6 +136,13 @@ onDestroy(() => {
 
 
   function exportWordlist(){
+
+    if (wordlistName == ''){
+      wordlistName = 'Generated-Credentials';
+    }
+
+    console.log("Exporting: ",wordlistName);
+
     let textContent = "Username,Password\n";
     textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
 
@@ -144,7 +153,7 @@ onDestroy(() => {
     // Create a temporary download link
     const a = document.createElement("a");
     a.href = url;
-    a.download = "GeneratedWordlist.txt"; // Default file name
+    a.download = wordlistName + ".txt"; // Default file name
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -290,7 +299,11 @@ onDestroy(() => {
 
     console.log("Saving File... ");
 
-    const file = new File([textContent], "user_credentials.txt", {type: "text/csv"});
+    if (wordlistName == ''){
+      wordlistName = 'Generated-Credentials';
+    }
+
+    const file = new File([textContent], wordlistName + ".txt", {type: "text/csv"});
 
     const formData = new FormData();
     formData.append("file",file);
@@ -361,6 +374,7 @@ onDestroy(() => {
 
                   </div>
                 </div>
+
                 <label style="padding-top: 5%;">
                   Number of Credentials:
                   <input type={passwordNumInput.type} bind:value={passwordNumInput[passwordNumInput.id]} placeholder={passwordNumInput.example} requirement={passwordNumInput.required} oninput={(e) => {dynamicAiParamUpdate(usernameNumInput.id, e.target.value); dynamicAiParamUpdate(passwordNumInput.id, e.target.value)}}/>
@@ -385,6 +399,18 @@ onDestroy(() => {
       {#if displayingResults}
         <h2>AI Credential Generator Results</h2>
         <h3 style="text-align: center; font-size: medium">Time: {finalTime} Usernames: {aiParams["userNum2"]} Passwords: {aiParams["passNum2"]}</h3>
+        <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
+
+        <div style="padding-top:5%">
+          <input type="text" bind:value={wordlistName} placeholder="Ex: wordlist_name" requirement=false style="width:100%">
+        </div>
+
+        <div style="display:flex; justify-contents:center; padding-top:1%">
+          <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
+          <button onclick={(e) => {handleSave()}}>Save</button>
+          <button onclick={(e) => {exportWordlist()}}>Export</button>
+        </div>
+
         <div class="results-table">
         <table>
           <thead>
@@ -402,14 +428,6 @@ onDestroy(() => {
             {/each}
           </tbody>
         </table>
-        <button onclick={(e) => {resultsToParams()}}>Back to Param Setup</button>
-
-        <div style="display:flex; justify-contents:center; padding-top:5%">
-          <button onclick={(e) => {regenerateCredentials()}}>Regenerate</button>
-          <button onclick={(e) => {handleSave()}}>Save</button>
-          <button onclick={(e) => {exportWordlist()}}>Export</button>
-        </div>
-
       </div>
       {/if}
 
