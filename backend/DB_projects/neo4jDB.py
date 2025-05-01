@@ -3,7 +3,6 @@ from neo4j import GraphDatabase
 from datetime import datetime
 import ssl
 import uuid
-import re
 
 URI = "bolt://127.0.0.1:7687"
 User = "neo4j"
@@ -11,17 +10,8 @@ Password = "testpassword"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
-
-    def split_initials(initials: str):
-        match = re.match(r'^([A-Za-z]+)(\d*)$', initials)
-        if match:
-            letters = match.group(1)  # alphabetic part, e.g., "MR"
-            number  = match.group(2)  # numeric part (may be empty), e.g., "1"
-            return letters, number
-        else:
-            return initials, ''
-
+        # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
+        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
             
     # Allows to create a Lead Analyst
     # @params Name: Name of the Analyst, ID: Id of the Analyst
@@ -41,23 +31,25 @@ class Neo4jInteractive:
             existing = session.run(check_query, base=base_initials)
             existing_initials = [record["existing"] for record in existing]
 
+            # Generar iniciales únicas
+            new_initials = base_initials
             count = 1
             while new_initials in existing_initials:
-                initials, number = self.split_initials(base_initials)
-                if number:
-                    new_initials = initials + str(int(number) + 1)
-                else:
-                    new_initials = initials + str(1)
+                new_initials = f"{base_initials}{count}"
+                count += 1
 
+            # Crear el analista
             query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
             session.run(query_create, name=str(Name), initials=new_initials)
 
+            # Crear rol
             query_find_role = """
             MERGE (r:Role {role: $role})
             RETURN r
             """
             session.run(query_find_role, role=str(role).capitalize())
 
+            # Relación y permisos
             query_create_relation = """
             MATCH (u:Analyst {initials: $initials}), (r:Role {role: $role})
             MERGE (u)-[:HAS_ROLE]->(r)
@@ -69,25 +61,7 @@ class Neo4jInteractive:
 
             return {"status": "success", "initials": new_initials}
 
-    def getScans(self, project_name, type):
-        query = """
-        MATCH (p:Project {name: $project_name})-[:HAS_SCAN]->(s:ScanRun)
-        WHERE toLower(s.type) = toLower($type)
-        RETURN s
-        """
-        with self.driver.session() as session:
-            result = session.run(query, project_name=project_name, type=type)
-            return [dict(record["s"]) for record in result]
-        
-    def getResults_perScan(self, run_id):
-        query = """
-        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
-        RETURN r
-        """
-        with self.driver.session() as session:
-            result = session.run(query, run_id=run_id)
-            return [dict(record["r"]) for record in result]
-        
+    
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
     # @returns: JSON format with success or error messages
@@ -574,10 +548,10 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
+            
     def close(self):
         if self.driver:
             self.driver.close()
-
     
 def is_ip_valid(ip):
     parts = ip.split(".")  
@@ -596,15 +570,3 @@ def is_ip_valid(ip):
             return False
     
     return True
-
-#if __name__ == "__main__":
-    db = Neo4jInteractive(URI, User, Password)
-
-    # Test Folder Creation
-    db.create_folder("Offline_Test_Folder")
-
-    # Return all folders in the DB
-    folders = db.get_folders()
-    print(folders)
-
-    db.close()
