@@ -298,8 +298,18 @@ class CredentialGeneratorMDP:
             self.words = []
         self.u_c, self.u_n, self.u_s = u_c, u_n, u_s
         self.p_c, self.p_n, self.p_s = p_c, p_n, p_s
-        self.umdp = CredentialMDP(order=4)
-        self.pmdp = CredentialMDP(order=3)
+        if u_len < 12:
+            u_order = 3
+        else:
+            u_order = 4
+        if p_len < 12:
+            p_order = 2
+        else:
+            p_order = 3
+       
+       
+        self.umdp = CredentialMDP(order=u_order)
+        self.pmdp = CredentialMDP(order=p_order)
         self.min_ul = u_len
         self.min_pl = p_len
         self.usyms = set('!@#$%^&*()-_=+[]{}|;:\",.<>/?~`')
