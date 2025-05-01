@@ -13,6 +13,7 @@ class SQLInjectionManager:
         print(f"[SQLInjection] Starting test on {target_url}:{port}")
         self.output_dir = "outputs_sql"
         self.output_file = os.path.join(self.output_dir, "sql_results.json")
+
         if headers is None:
             headers = {}
 
@@ -25,7 +26,6 @@ class SQLInjectionManager:
             "1' AND 1=2#"
         ]
 
-
         results = []
 
         for payload in payloads:
@@ -33,44 +33,35 @@ class SQLInjectionManager:
 
             try:
                 response = requests.get(full_url, headers=headers, timeout=timeout)
+                is_vulnerable = self._is_vulnerable(response)
+
                 result = {
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
                     "payload": payload,
                     "status_code": response.status_code,
                     "content_length": len(response.text),
-                    "snippet": response.text[:150]
+                    "snippet": response.text[:150],
+                    "vulnerable": is_vulnerable
                 }
-                print(f"[SQLInjection] Payload '{payload}' gave status {response.status_code}")
-                results.append(result)
 
-                if self._is_vulnerable(response):
-                    result["vulnerable"] = True
-                else:
-                    result["vulnerable"] = False
+                results.append(result)
 
             except Exception as e:
                 print(f"[SQLInjection] Error on payload '{payload}': {e}")
                 results.append({
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
                     "payload": payload,
                     "error": str(e),
                     "vulnerable": False
                 })
 
-        output = {
-            "target": target_url,
-            "port": port,
-            "timeout": timeout,
-            "headers": headers,
-            "results": results,
-            "vulnerable": any(r.get("vulnerable") for r in results)
-        }
-
-        if output["vulnerable"] and enum_level > 0:
-            output["tables"] = self._enumerate_db(target_url, port, timeout, headers, enum_level)
-            
-        # Ensure output directory exists
+        # Save to file
         os.makedirs(self.output_dir, exist_ok=True)
 
-        # Load existing JSON results if file exists
         if os.path.exists(self.output_file):
             try:
                 with open(self.output_file, "r") as f:
@@ -82,10 +73,8 @@ class SQLInjectionManager:
         else:
             existing_data = []
 
-        # Append new output
-        existing_data.append(output)
+        existing_data.extend(results)
 
-        # Write back to file
         try:
             with open(self.output_file, "w") as f:
                 json.dump(existing_data, f, indent=4)
@@ -93,7 +82,8 @@ class SQLInjectionManager:
         except Exception as e:
             print(f"[SQLInjection] Failed to save results: {e}")
 
-        return output
+        return results  # flat list of individual payload results
+
 
     def _is_vulnerable(self, response):
         if response is None:

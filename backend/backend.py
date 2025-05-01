@@ -802,13 +802,17 @@ class SQLRequest(BaseModel):
 async def sql_inject(req: SQLRequest):
     injector = SQLInjectionManager()
     results = injector.perform_sql_injection(
-        req.target_url,
-        req.port,
+        target_url=req.target_url,
+        port=req.port,
         timeout=req.timeout,
         headers=req.headers,
         enum_level=req.enum_level
     )
+    
+    # Return as JSON list
     return JSONResponse(content=results)
+
+
 
 import mysql.connector  # Make sure you pip install mysql-connector-python
 from fastapi import HTTPException
