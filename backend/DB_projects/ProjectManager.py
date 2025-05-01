@@ -1,7 +1,7 @@
 from .neo4jDB import Neo4jInteractive
 
 class ProjectManager:
-    def __init__(self, uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue"):
+    def __init__(self, uri="bolt://192.168.1.10:7687", user="neo4j", password="testpassword"):
     
         #self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
         self.neo4j = Neo4jInteractive(uri, user, password)
