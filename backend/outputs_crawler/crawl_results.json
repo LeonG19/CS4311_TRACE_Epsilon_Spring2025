@@ -1,131 +1,255 @@
 [
     {
         "id": 1,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/",
+        "title": "Apple",
+        "word_count": 3804,
+        "char_count": 23610,
+        "link_count": 77,
+=======
         "url": "https://discord.com",
         "title": "Discord - Group Chat That\u2019s All Fun & Games",
         "word_count": 379,
         "char_count": 3568,
         "link_count": 48,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 2,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/racial-equity-justice-initiative/",
+        "title": "Racial Equity and Justice Initiative - Apple",
+        "word_count": 5030,
+        "char_count": 33972,
+        "link_count": 71,
+=======
         "url": "https://discord.com/college",
         "title": "Discord for College | University Clubs and Organizations",
         "word_count": 813,
         "char_count": 7248,
         "link_count": 125,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 3,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/us/search",
+        "title": "Apple Store Search Results - Apple",
+        "word_count": 305,
+        "char_count": 4677,
+        "link_count": 70,
+=======
         "url": "https://discord.com/safety-news",
         "title": "Safety News Hub | Discord",
         "word_count": 18116,
         "char_count": 116437,
         "link_count": 123,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 4,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/education/",
+        "title": "Education - Apple",
+        "word_count": 495,
+        "char_count": 3573,
+        "link_count": 76,
+=======
         "url": "https://discord.com/category/company",
         "title": "Discord Blog",
         "word_count": 773,
         "char_count": 6515,
         "link_count": 114,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 5,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/diversity/",
+        "title": "Inclusion & Diversity - Apple",
+        "word_count": 4568,
+        "char_count": 32125,
+        "link_count": 70,
+=======
         "url": "https://discord.com/servers",
         "title": "Discord Servers - Home",
         "word_count": 539,
         "char_count": 4547,
         "link_count": 50,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 6,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/apple-music/",
+        "title": "Apple Music - Apple",
+        "word_count": 2908,
+        "char_count": 20105,
+        "link_count": 81,
+=======
         "url": "https://discord.com/developers/docs/intro",
         "title": "Discord Developer Portal",
         "word_count": 5,
         "char_count": 61,
         "link_count": 0,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 7,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/apple-podcasts/",
+        "title": "Apple Podcasts - Apple",
+        "word_count": 1395,
+        "char_count": 9935,
+        "link_count": 72,
+=======
         "url": "https://discord.com/safety-parents",
         "title": "Parent Hub | Discord Safety",
         "word_count": 1200,
         "char_count": 8935,
         "link_count": 50,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 8,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/ipad/",
+        "title": "iPad - Apple",
+        "word_count": 1440,
+        "char_count": 10036,
+        "link_count": 97,
+=======
         "url": "https://discord.com/acknowledgements",
         "title": "Acknowledgements | Discord",
         "word_count": 30,
         "char_count": 578,
         "link_count": 25,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 9,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/privacy/",
+        "title": "Privacy - Apple",
+        "word_count": 2244,
+        "char_count": 14859,
+        "link_count": 73,
+=======
         "url": "https://discord.com/ads/quests-faq",
         "title": "Discord Quests Frequently Asked Questions",
         "word_count": 797,
         "char_count": 6394,
         "link_count": 50,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 10,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/retail/",
+        "title": "Apple Store - Find a Store - Apple",
+        "word_count": 459,
+        "char_count": 3127,
+        "link_count": 67,
+=======
         "url": "https://discord.com/developers/build",
         "title": "Build Where the World Plays | Discord",
         "word_count": 892,
         "char_count": 7247,
         "link_count": 50,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 11,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/apple-pay/",
+        "title": "Apple Pay - Apple",
+        "word_count": 3035,
+        "char_count": 18363,
+        "link_count": 75,
+=======
         "url": "https://discord.com/login",
         "title": "Discord",
         "word_count": 3,
         "char_count": 43,
         "link_count": 0,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 12,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/apple-vision-pro/",
+        "title": "Apple Vision Pro - Apple",
+        "word_count": 3766,
+        "char_count": 25931,
+        "link_count": 84,
+=======
         "url": "https://discord.com/ads/quests-success-stories",
         "title": "Discord Quests Success Stories",
         "word_count": 439,
         "char_count": 4249,
         "link_count": 49,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     },
     {
         "id": 13,
+<<<<<<< HEAD
+        "url": "https://www.apple.com/sitemap/",
+        "title": "Site Map - Apple",
+        "word_count": 1213,
+        "char_count": 10106,
+        "link_count": 243,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 14,
+        "url": "https://www.apple.com/today/",
+        "title": "Today at Apple - Apple",
+        "word_count": 973,
+        "char_count": 9338,
+        "link_count": 332,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 15,
+        "url": "https://www.apple.com/environment/",
+        "title": "Environment - Apple",
+        "word_count": 4558,
+        "char_count": 31376,
+        "link_count": 359,
+=======
         "url": "https://discord.com/company",
         "title": "About Discord | Our Mission and Story",
         "word_count": 820,
         "char_count": 6473,
         "link_count": 37,
+>>>>>>> 59dad70f38545e5692d8879b5cce76ccfbf0396b
         "error": false,
         "severity": "Low"
     }
