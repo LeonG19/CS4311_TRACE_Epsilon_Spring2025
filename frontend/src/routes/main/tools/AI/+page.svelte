@@ -239,6 +239,8 @@ onDestroy(() => {
 
     const formData = new FormData();
 
+    aiResult = []
+
     if(wordlist) {
       formData.append("file", wordlist);
     }
