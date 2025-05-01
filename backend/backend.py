@@ -710,6 +710,10 @@ async def get_all_scans(projectName: str):
 async def get_scan(projectName: str, scanType: str):
     return pm.get_scan(projectName, scanType)
 
+@app.get("/getScanResults/{scanID}")
+async def getResults_perScan(scanID: str):
+    return pm.getResults_perScan(scanID)
+
 
 @app.post("/analyst/{initials}/")
 async def check_login(initials:str):
