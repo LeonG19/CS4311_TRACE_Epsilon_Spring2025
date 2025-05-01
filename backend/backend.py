@@ -705,8 +705,16 @@ async def create_project(project_name: str = Form(...),
     return {"status": "success"}
 
 @app.get("/getResult/{projectName}")
-async def get_scans(projectName: str):
+async def get_all_scans(projectName: str):
     return pm.get_all_scans(projectName)
+
+@app.get("/getScan/{projectName}/{scanType}")
+async def get_scan(projectName: str, scanType: str):
+    return pm.get_scan(projectName, scanType)
+
+@app.get("/getScanResults/{scanID}")
+async def getResults_perScan(scanID: str):
+    return pm.getResults_perScan(scanID)
 
 
 @app.post("/analyst/{initials}/")
