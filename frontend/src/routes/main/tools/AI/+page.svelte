@@ -162,8 +162,46 @@
     URL.revokeObjectURL(url);
   }
 
-  function exportFromDB(){
+  async function exportFromDB(file){
+    try {
+      const response = await fetch(("http://localhost:8000/export_AI/" + projectName + "/" + file), {
+        method: "GET"
+      });
 
+      if(response.ok){
+        const data = await response.json();
+        console.log("Received AI Results: ", data)
+
+        if (wordlistName == ''){
+          wordlistName = 'Generated-Credentials';
+        }
+
+        // CHANGE wordlistName to appropriate
+        console.log("Exporting: ",wordlistName);
+
+        // CHANGE textContent to DATA
+        let textContent = "Username,Password\n";
+        textContent += aiResult[0].credentials.map(([username, password]) => `${username},${password}`).join("\n");
+
+        // Create a Blob and Object URL
+        const blob = new Blob([textContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary download link
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = wordlistName + ".txt"; // Default file name
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Cleanup
+        URL.revokeObjectURL(url);
+      }
+
+    } catch (error) {
+      console.error("Error fetching wordlist:", error);
+    }
   }
 
   function dynamicAiParamUpdate(id, value) {
@@ -277,7 +315,22 @@
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          const updates = chunk.split('\n').filter(Boolean).map(JSON.parse);
+          const updates = chunk
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              const parsed = JSON.parse(line);
+              
+              // Check for scans === false
+              if (parsed.scans === false) {
+                console.error("Error, missing data from scans");
+                alert("Missing data from scans");
+
+                generatingToParams();
+              }
+
+              return parsed;
+            });
           aiResult = [...aiResult, ...updates];
 
           console.log("Processed Credentials...", aiResult[0].credentials);
@@ -341,7 +394,7 @@
              
                 <div class="input-container">
                   <div class="column">
-                  <label>Username</label>
+                  <label><u>Username</u></label>
                   {#each usernameInput as param} 
                       <label>{param.label}</label> 
                       <label class="toggle-switch">                
@@ -358,7 +411,7 @@
                   </div>
 
                   <div class="column">
-                  <label>Password</label>
+                  <label><u>Password</u></label>
                   {#each passwordInput as param}
                       <label>{param.label}</label> 
                       <label class="toggle-switch">                
@@ -433,6 +486,7 @@
 
       {#if showWordlists}
         <h2>AI Credential Generator Results</h2>
+        <button onclick={(e) => {wordlistToParams()}}>Back to Param Setup</button>
         <div class="results-table">
         <table>
           <thead>
@@ -445,12 +499,12 @@
             {#each Object.entries(uDict) as [filename, value]}
               <tr>
                 <td>{filename}</td>
-                <td><button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => {handleDelete(value);wordlistToParams()}}>Delete</button></td>
+                <td><button id={filename} style="background-color:#007bff; border-radius:10px" onclick={(e) => exportFromDB(value)}>Export</button>
+                    <button id={filename} style="background-color:red; border-radius:10px" onclick={(e) => handleDelete(value)}>Delete</button></td>
               </tr>
             {/each}
           </tbody>
         </table>
-        <button onclick={(e) => {wordlistToParams()}}>Back to Param Setup</button>
         </div>
       {/if}
 

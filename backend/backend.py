@@ -456,6 +456,7 @@ async def generate_credentials_endpoint(file: UploadFile = File(None), data: str
 
     
     scans = await get_all_scans(data["projectName"])
+    
     if (scans == []):
         print("no scans")
         return {"scans": False}
