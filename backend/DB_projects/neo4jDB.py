@@ -129,6 +129,13 @@ class Neo4jInteractive:
             query= """MATCH (p:Project {name: $project_name}) SET p.is_deleted= false, p.deleted_date=null """
             session.run(query, project_name=project_name)
             return {"status": "success"}
+        
+    def sanitize_value(value):
+        if isinstance(value, bool):
+            return str(value).lower()  # Converts True to "true" (unquoted in Cypher)
+        elif isinstance(value, str):
+            return value.replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+        return value
 
      # Allows the Database to receive a JSON and put all the information inside a node called Results
     # @params: json_data: json object, result_type: indicator for which type of result is
@@ -174,10 +181,10 @@ class Neo4jInteractive:
                         result["error"] = result["error"].lower() == "true"
 
 
-                    fields = ", ".join([f"{key}: ${key}" for key in result])
-                    print(fields)
-         
+                    sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
+                    fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
                     query = f"CREATE (r:Result {{ {fields} }})"
+         
 
                     try:
 
@@ -204,6 +211,7 @@ class Neo4jInteractive:
 
         return {"status": "success"}
     
+
     def get_all_results_by_project(self, project_name):
         query = """
         MATCH (p {name: $project_name})
