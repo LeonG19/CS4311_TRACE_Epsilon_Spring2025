@@ -12,7 +12,7 @@ class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
 
     def split_initials(initials: str):
         match = re.match(r'^([A-Za-z]+)(\d*)$', initials)
