@@ -79,6 +79,15 @@ class Neo4jInteractive:
             result = session.run(query, project_name=project_name, type=type)
             return [dict(record["s"]) for record in result]
         
+    def getResults_perScan(self, run_id):
+        query = """
+        MATCH (s:ScanRun {run_id: $run_id})-[:HAS_RESULT]->(r:Result)
+        RETURN r
+        """
+        with self.driver.session() as session:
+            result = session.run(query, run_id=run_id)
+            return [dict(record["r"]) for record in result]
+        
     # Allows to delete an alayst specifying it's initials
     # @params: initials: Initials of the analyst we are going to delete
     # @returns: JSON format with success or error messages
