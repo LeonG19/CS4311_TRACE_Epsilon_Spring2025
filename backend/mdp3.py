@@ -312,7 +312,7 @@ class CredentialGeneratorMDP:
         self.pmdp = CredentialMDP(order=p_order)
         self.min_ul = u_len
         self.min_pl = p_len
-        self.usyms = set('!@#$%^&*()-_=+[]{}|;:\",.<>/?~`')
+        self.usyms = set('!@#$%^&*()-_=+[]{}|;:\".<>/?~`')
         self.psyms = self.usyms
 
     def allow_u(self, ch: str) -> bool:
