@@ -5,9 +5,9 @@ import ssl
 import uuid
 import re
 
-URI="neo4j://941e739f.databases.neo4j.io"
+URI="bolt://127.0.0.1:7687"
 User="neo4j"
-Password="Team_Blue"
+Password="testpassword"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
