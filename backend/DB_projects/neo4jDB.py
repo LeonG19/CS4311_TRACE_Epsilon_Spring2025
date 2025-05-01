@@ -5,7 +5,7 @@ import ssl
 import uuid
 import re
 
-URI="bolt://127.0.0.1:7687"
+URI="bolt://192.168.1.10:7687"
 User="neo4j"
 Password="testpassword"
 class Neo4jInteractive:
