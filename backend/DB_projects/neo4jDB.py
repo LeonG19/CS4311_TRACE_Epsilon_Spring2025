@@ -3,6 +3,7 @@ from neo4j import GraphDatabase
 from datetime import datetime
 import ssl
 import uuid
+import re
 
 URI="neo4j://941e739f.databases.neo4j.io"
 User="neo4j"
@@ -12,6 +13,15 @@ class Neo4jInteractive:
         context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
         self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+
+    def split_initials(initials: str):
+        match = re.match(r'^([A-Za-z]+)(\d*)$', initials)
+        if match:
+            letters = match.group(1)  # alphabetic part, e.g., "MR"
+            number  = match.group(2)  # numeric part (may be empty), e.g., "1"
+            return letters, number
+        else:
+            return initials, ''
             
     # Allows to create a Lead Analyst
     # @params Name: Name of the Analyst, ID: Id of the Analyst
@@ -32,13 +42,14 @@ class Neo4jInteractive:
             existing_initials = [record["existing"] for record in existing]
 
             # Generar iniciales únicas
-            new_initials = base_initials
             count = 1
             while new_initials in existing_initials:
-                new_initials = f"{base_initials}{count}"
-                count += 1
+                initials, number = self.split_initials(base_initials)
+                if number:
+                    new_initials = initials + str(int(number) + 1)
+                else:
+                    new_initials = initials + str(1)
 
-            # Crear el analista
             query_create = "MERGE (u:Analyst {name: $name, initials: $initials}) RETURN elementId(u)"
             session.run(query_create, name=str(Name), initials=new_initials)
 
