@@ -1,6 +1,18 @@
 <script>
   import {onMount} from 'svelte';
   let typeOfTool
+  let choosingScan = true
+  let displayingResultsOfSelectedScan = false
+  let scansInProject = []
+
+  function choosingScanToDisplayingResults(){
+  let choosingScan = false
+  let displayingResultsOfSelectedScan = true
+  }
+
+  function handleRowClick(run_id){
+    console.log(run_id)
+  }
 
   onMount(async () => {
     typeOfTool = sessionStorage.getItem("prev_results_type");
@@ -13,7 +25,7 @@
           'Content-Type': 'application/json',
         }
       });
-      console.log(response)
+      scansInProject = await response.json()
     } catch (error) {
       alert(`An error occurred during retreival of scans: ${error.message}`);
       console.error('Error during retreival of scans:', error);
@@ -23,23 +35,26 @@
 
 </script>
 <div>
-    <h1>Hello {typeOfTool}</h1>
+  <h1 class="center-wrapper">Previous {typeOfTool} Results</h1>
+  <div class="table-container">
+    <table>
+      <tbody>
+        {#each scansInProject as scan, i}
+          <tr on:click={() => handleRowClick(scan.run_id)}>
+            <td>{typeOfTool} {i}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <style>
-  .progress-bar {
-    width: 100%;
-    background-color: #e0e0e0;
-    border-radius: 5px;
-    overflow: hidden;
-    margin: 10px 0;
-  }
-
-  .progress {
-    height: 20px;
-    background-color: #646cff;
-    transition: width 0.3s ease;
-  }
+  .center-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
   .table-container {
     max-height: 300px;
@@ -51,6 +66,9 @@
     background-color: #1f1f1f;
     width: 100%; /* Ensures the table conainter stays at a fixed width*/
     box-sizing: border-box; /* Ensures padding is included in the width */
+    color: white;
+    margin: 0 auto; /* Center horizontally */
+    align-items: center;
   }
 
   .table-container table {
@@ -59,9 +77,9 @@
     table-layout: fixed /* Prevents the columns from adjusting dynamically*/
   }
 
-  .table-container th, .table-container td {
+  .table-container td {
     padding: 8px;
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid #ccc;
     white-space: nowrap; /* Prevents text from wrapping */
     overflow: hidden; /* Hides overflow text */
