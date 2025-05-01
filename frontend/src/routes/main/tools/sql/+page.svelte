@@ -58,6 +58,23 @@
       const json = await res.json();
       result = json;
       vulnerable = result.some((r) => r.vulnerable === true);
+      const projectName = sessionStorage.getItem('name');
+      if (projectName) {
+        try {
+          await fetch(`http://localhost:8000/submit_results/sqlinjection/${projectName}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(result)
+          });
+          console.log("SQLi results submitted to DB.");
+          console.log(JSON.stringify(result))
+        } catch (e) {
+          console.error("Failed to submit SQLi results:", e);
+        }
+      }
+
     } catch (err: any) {
       error = 'Failed to contact backend: ' + err.message;
     } finally {
