@@ -57,6 +57,9 @@ class SQLInjectionManager:
 
         output = {
             "target": target_url,
+            "port": port,
+            "timeout": timeout,
+            "headers": headers,
             "results": results,
             "vulnerable": any(r.get("vulnerable") for r in results)
         }
