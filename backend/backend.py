@@ -585,8 +585,10 @@ async def create_project(project_name: str = Form(...),
     end_date: str = Form(...),
     description: str = Form(...),
     lead_analyst_initials: str = Form(...),
-    files: list[UploadFile] = File(default=[])):
-    result=pm.create_project(project_name, start_date, end_date, description, lead_analyst_initials, files)
+    local_file_path: str = Form (...),
+    file_names: str = Form(default='[]'),  # JSON-encoded list of file names
+    files: List[UploadFile] = File(default=[])):  # Uploaded files
+    result=pm.create_project(project_name, start_date, end_date, description, lead_analyst_initials, file_names, local_file_path)
     return {"status": "success"}
 
 @app.get("/getResult/{projectName}")

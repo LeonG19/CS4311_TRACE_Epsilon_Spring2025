@@ -15,17 +15,19 @@ class ProjectManager:
     #        result = session.run(query, **params)
     #        return list(result)  # Consume the result into a list within the session
 
-    def create_project(self, project_name, start_date, end_date, description, lead_analyst_initials, files):
-        # Convert files to list if it's a string
+    def create_project(self, project_name, start_date, end_date, description, lead_analyst_initials, files, local_file_path):
+        # Ensure files is a list
         if isinstance(files, str):
-            files = [] if files == "" else [files]  # Empty string becomes empty list, otherwise a single-item list
+            files = [] if files == "" else [files]
+        elif not isinstance(files, list):
+            files = []  # Handle None, other types
+        # Files is now guaranteed to be a list (e.g., ["document.pdf", "image.jpg"] or [])
 
         # Create the Project node
-        self.neo4j.create_project(project_name, start_date, end_date, description, files)
+        self.neo4j.create_project(project_name, start_date, end_date, description, files, local_file_path)
 
         # Create the OWNS relationship
         self.neo4j.add_ownership(lead_analyst_initials, project_name)
-
 
     def delete_project(self, project_name):
         result = self.neo4j.delete_project(project_name)
