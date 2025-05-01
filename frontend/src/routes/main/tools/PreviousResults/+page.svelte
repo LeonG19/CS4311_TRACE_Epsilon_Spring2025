@@ -164,17 +164,4 @@
     overflow: hidden; /* Hides overflow text */
     text-overflow: ellipsis; /* Adds ellipsis for overflow text */
   }
-
-  .results-table {
-    margin-top: 20px; 
-  }
-
-  .results-table button {
-    margin-top: 20px;
-    margin-right: 10px;
-    padding: 5px 10px;
-    font-size: 1rem;
-    width: auto;
-    min-width: 80px;
-  }
 </style>
