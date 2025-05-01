@@ -4,9 +4,9 @@ from datetime import datetime
 import ssl
 import uuid
 
-URI = "bolt://127.0.0.1:7687"
+URI = "neo4j://941e739f.databases.neo4j.io"
 User = "neo4j"
-Password = "testpassword"
+Password = "Team_Blue"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
@@ -164,7 +164,7 @@ class Neo4jInteractive:
                     """
                     MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
-                    SET s.type = $type
+                    SET tolower(s.type) = LOWER($type)
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -172,7 +172,7 @@ class Neo4jInteractive:
                 )
                 
                 for result in results:
-                    result["type"] = result_type
+                    result["type"] = result_type.lower()
                     if "id" in result and isinstance(result["id"], int):
                         result["id"] = str(result["id"]) + "_" + run_id
                     else:
