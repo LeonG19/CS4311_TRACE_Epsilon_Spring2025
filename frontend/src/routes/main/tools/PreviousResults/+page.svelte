@@ -1,23 +1,36 @@
 <script>
   import {onMount} from 'svelte';
+	import { preventDefault } from 'svelte/legacy';
   let typeOfTool
   let choosingScan = true
   let displayingResultsOfSelectedScan = false
   let scansInProject = []
+  let specificScanResults = []
 
   function choosingScanToDisplayingResults(){
-  let choosingScan = false
-  let displayingResultsOfSelectedScan = true
+  choosingScan = false
+  displayingResultsOfSelectedScan = true
   }
 
-  function handleRowClick(run_id){
-    console.log(run_id)
+  function returnToScanTable(){
+  choosingScan = true
+  displayingResultsOfSelectedScan = false
+  }
+
+  async function handleRowClick(run_id){
+    const response = await fetch(`http://localhost:8000/getScanResults/${run_id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    specificScanResults = await response.json();
+    console.log(specificScanResults)
+    choosingScanToDisplayingResults();
   }
 
   onMount(async () => {
     typeOfTool = sessionStorage.getItem("prev_results_type");
-    console.log(typeOfTool);
-    console.log(sessionStorage.getItem("name"));
     try{
       const response = await fetch(`http://localhost:8000/getScan/${sessionStorage.getItem('name')}/${typeOfTool}`, {
         method: 'GET',
@@ -36,16 +49,46 @@
 </script>
 <div>
   <h1 class="center-wrapper">Previous {typeOfTool} Results</h1>
-  <div class="table-container">
-    <table>
-      <tbody>
-        {#each scansInProject as scan, i}
-          <tr on:click={() => handleRowClick(scan.run_id)}>
-            <td>{typeOfTool} {i}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+  <div>
+      {#if choosingScan}
+      <div class="table-container">
+        <table>
+          <tbody>
+              {#each scansInProject as scan, i}
+                <tr on:click={(e) => {preventDefault(e); handleRowClick(scan.run_id)}}>
+                  <td>{typeOfTool} {i}</td>
+                </tr>
+              {/each}
+            
+          </tbody>
+        </table>
+      </div>
+      {/if}
+  </div>
+  <div>
+    {#if displayingResultsOfSelectedScan}
+      <div class = "table-container">
+        {#if typeOfTool == "crawler"}
+          <table>
+            <tbody>
+              {#each specificScanResults as scanResult, index}
+              <tr>
+                <td>{index}</td>
+                <td>{scanResult.url}</td>
+                <td>{scanResult.title}</td>
+                <td>{scanResult.word_count}</td>
+                <td>{scanResult.char_count}</td>
+                <td>{scanResult.link_count}</td>
+                <td>{scanResult.error ? 'True' : 'False'}</td>
+                <td>{scanResult.severity}</td>
+              </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
+      </div>
+      <button on:click={(e) => {preventDefault(e); returnToScanTable()}}>Return To Scans</button>
+    {/if}
   </div>
 </div>
 
@@ -97,38 +140,5 @@
     font-size: 1rem;
     width: auto;
     min-width: 80px;
-  }
-
-  .crawl-section {
-    background-color: #1f1f1f;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    margin-top: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-
-  .crawl-section button {
-    margin-top: 20px;
-    margin-right: 10px;
-    padding: 5px 10px;
-    font-size: 1rem;
-    width: auto;
-    min-width: 80px;
-  }
-
-  .error {
-    color: red;
-    font-size: 0.8rem;
-  }
-
-  input{
-    color: white;
-  }
-  input:focus {
-    color: white;
-  }
-
-  input::placeholder {
-    color: #aaa; 
   }
 </style>
