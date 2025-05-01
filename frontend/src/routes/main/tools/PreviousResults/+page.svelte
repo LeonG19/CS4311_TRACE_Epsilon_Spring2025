@@ -31,6 +31,7 @@
 
   onMount(async () => {
     typeOfTool = sessionStorage.getItem("prev_results_type");
+    console.log(typeOfTool)
     try{
       const response = await fetch(`http://localhost:8000/getScan/${sessionStorage.getItem('name')}/${typeOfTool}`, {
         method: 'GET',
@@ -68,24 +69,59 @@
   <div>
     {#if displayingResultsOfSelectedScan}
       <div class = "table-container">
-        {#if typeOfTool == "crawler"}
-          <table>
-            <tbody>
+        <table>
+          <tbody>
+            {#if typeOfTool == "crawler"}
               {#each specificScanResults as scanResult, index}
-              <tr>
-                <td>{index}</td>
-                <td>{scanResult.url}</td>
-                <td>{scanResult.title}</td>
-                <td>{scanResult.word_count}</td>
-                <td>{scanResult.char_count}</td>
-                <td>{scanResult.link_count}</td>
-                <td>{scanResult.error ? 'True' : 'False'}</td>
-                <td>{scanResult.severity}</td>
-              </tr>
+                <tr>
+                  <td>{index}</td>
+                  <td>{scanResult.url}</td>
+                  <td>{scanResult.title}</td>
+                  <td>{scanResult.word_count}</td>
+                  <td>{scanResult.char_count}</td>
+                  <td>{scanResult.link_count}</td>
+                  <td>{scanResult.error ? 'True' : 'False'}</td>
+                  <td>{scanResult.severity}</td>
+                </tr>
               {/each}
-            </tbody>
-          </table>
-        {/if}
+            {/if}
+            {#if typeOfTool == "fuzzer"}
+              {#each specificScanResults as scanResult, index}
+                  <tr>
+                    <td>{index}</td>
+                    <td>{scanResult.response}</td>
+                    <td>{scanResult.lines}</td>
+                    <td>{scanResult.words}</td>
+                    <td>{scanResult.chars}</td>
+                    <td>{scanResult.payload}</td>
+                    <td>{scanResult.length}</td>
+                    <td>{scanResult.error ? 'Yes' : 'No'}</td>
+                  </tr>
+                {/each}
+            {/if}
+            {#if typeOfTool == "bruteforcer"}
+              {#each specificScanResults as scanResult, index} <!-- Key by result.id -->
+                <tr>
+                  <td>{index}</td> <!-- Display result.id instead of index + 1 -->
+                  <td>{scanResult.response}</td>
+                  <td>{scanResult.lines}</td>
+                  <td>{scanResult.words}</td>
+                  <td>{scanResult.chars}</td>
+                  <td>{scanResult.payload}</td>
+                  <td>{scanResult.length}</td>
+                </tr>
+              {/each}
+            {/if}
+            {#if typeOfTool == "AI"}
+              {#each specificScanResults as scanResult, index}
+                <tr>
+                  <td>{scanResult.Username}</td>
+                  <td>{scanResult.Password}</td>
+                </tr>
+              {/each}
+            {/if}
+          </tbody>
+        </table>
       </div>
       <button on:click={(e) => {preventDefault(e); returnToScanTable()}}>Return To Scans</button>
     {/if}

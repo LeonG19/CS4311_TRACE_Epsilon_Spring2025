@@ -64,19 +64,16 @@
         <div class="tm-row">
           <div><span> HTTPTester </span></div>
           <div><button on:click={gotoHTTPTester} title="Navigates to the HTTP Tester page">Scan</button></div>
-          <div><button on:click={() => gotoToolResults("none")} title="Navigates to the Crawler page">Results</button></div>
         </div>
 
         <div class="tm-row">
           <div><span> SQL Injector </span></div>
           <div><button on:click={gotosql} title="Navigates to the SQL Injector page">Scan</button></div>
-          <div><button on:click={() => gotoToolResults("SQLI")} title="Navigates to the Crawler page">Results</button></div>
         </div>
         
         <div class="tm-row">
           <div><span>DB Enumerator</span></div>
           <div><button on:click={gotoDBEnum} title="Navigates to the DB Enumerator page">Scan</button></div>
-          <div><button on:click={() => gotoToolResults("db_enum")} title="Navigates to the Crawler page">Results</button></div>
         </div>    
         
       </div>
