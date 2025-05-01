@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import { preventDefault } from "svelte/legacy";
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true };
 
@@ -45,6 +46,9 @@
   // Control flags
   let pauseAvailable = true;
   let resumeAvailable = false;
+
+  //database project name for path
+  let projectName = ""; // to store the project name
   
 
   //applying crawler sorter i added over there to here
@@ -291,6 +295,8 @@
         showResultsButton = true;
         stopTimer();
         runningToResults(); // << This line was missing
+        // Submit the brute-force results to the project
+        await submitbruteResultsToProject(); // Submit results after brute force finishes
         break;
         }
 
@@ -483,6 +489,67 @@
       popoutWindow.addTerminalLine(formattedLine, type);
     }
   }
+
+  onMount(() => {
+  projectName = sessionStorage.getItem('name');
+  console.log("Project Name:", projectName);
+  bruteForceParams.project_name = projectName;
+});
+  // this is where we pass the file to db
+  /*
+  async function submitbruteResultsToProject() {
+    try {
+      // Ensure the `results` variable holds th"""e actual brute force results as a JSON object
+      const resultsData = {
+        type: "bruteforcer", // Set type to "bruteforcer"
+        projectName: projectName, // Ensure this is set correctly before calling
+        results: results // This is the actual results from brute force, should be a JSON object
+      };
+
+      console.log("Submitting brute force results to project:", resultsData); // Debugging log
+
+      // Sending the POST request with the results to the appropriate endpoint
+      const response = await fetch(`http://localhost:8000/submit_results/bruteforcer/${projectName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resultsData) // Send the `resultsData` as the body
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit results: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Results submitted successfully:", result);
+      addToTerminal('Results submitted successfully', 'success'); // Update the terminal with success message
+    } catch (error) {
+      console.error("Error submitting brute force results:", error);
+      addToTerminal(`Error submitting results: ${error.message}`, 'error'); // Update the terminal with error message
+    }
+  }
+*/
+
+async function submitbruteResultsToProject() {
+    try {
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/bruteforcer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(results),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`Saved ${body.inserted} results for ${projectName}`);
+      } else {
+        console.error("Save failed:", body.detail || body.error);
+      }
+    } catch (e) {
+      console.error("Network error on submit:", e);
+    }
+  }
+
 </script>
 
 <div class="bruteForceConfigPage">
