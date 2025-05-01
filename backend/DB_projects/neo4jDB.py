@@ -4,14 +4,14 @@ from datetime import datetime
 import ssl
 import uuid
 
-URI="neo4j://941e739f.databases.neo4j.io"
-User="neo4j"
-Password="Team_Blue"
+URI = "bolt://127.0.0.1:7687"
+User = "neo4j"
+Password = "testpassword"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
         context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
             
     # Allows to create a Lead Analyst
     # @params Name: Name of the Analyst, ID: Id of the Analyst
@@ -548,6 +548,9 @@ class Neo4jInteractive:
                 return [dict(record["e"]) for record in results]
             except Exception as e:
                 return {"status": "failure", "error": str(e)}
+    def close(self):
+        if self.driver:
+            self.driver.close()
 
     
 def is_ip_valid(ip):
@@ -567,3 +570,15 @@ def is_ip_valid(ip):
             return False
     
     return True
+
+#if __name__ == "__main__":
+    db = Neo4jInteractive(URI, User, Password)
+
+    # Test Folder Creation
+    db.create_folder("Offline_Test_Folder")
+
+    # Return all folders in the DB
+    folders = db.get_folders()
+    print(folders)
+
+    db.close()
