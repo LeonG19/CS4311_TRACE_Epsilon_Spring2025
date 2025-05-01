@@ -206,11 +206,10 @@ class Neo4jInteractive:
                     if "error" in result and isinstance(result["error"], str) and result["error"].lower() in ("true", "false"):
                         result["error"] = result["error"].lower() == "true"
 
-                    if result["type"] =="sqlinjection":
-                        sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
-                        fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
-                    else:
-                        fields = ", ".join([f"{key}: ${key}" for key in result.keys()])
+                    
+                    sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
+                    fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
+                    
                     
                     query = f"CREATE (r:Result {{ {fields} }})"
 
