@@ -1,5 +1,10 @@
 <script>
+	import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+
+  if(sessionStorage.getItem('analyst_initials') == ''){
+    goto('/');
+  }
 
   // Dynamically determines if the current route is under /main/tools
   $: isToolsPage = $page.url.pathname.startsWith('/main/tools');
@@ -34,6 +39,19 @@
     }
   }
 
+  // Pop up to confirm if user wishes to leave the tools page.
+  function handleLogOut(event) {
+    if (isToolsPage) {
+      const confirmed = window.confirm("Are you sure you wish to log out?");
+      if (confirmed) {
+        sessionStorage.setItem('analyst_initials', '');
+        window.location.href = '/'; // Redirect to the main page
+      } else {
+        event.preventDefault(); // Prevent the default action if the user cancels
+      }
+    }
+  }
+
 </script>
 
 <!-- This is where the containers to hold either the main menu side bar or the tools sidebar is created-->
@@ -54,6 +72,11 @@
               </a>
           {/each}
       </div>
+      <div class="LogOut">
+        <a href="/" title="Logs user Out" on:click = {handleLogOut}>
+            <i class="fas fa-sign-out"></i>
+        </a>
+    </div>
   </nav>
 
   <div class="main-content">

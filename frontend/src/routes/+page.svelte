@@ -4,7 +4,6 @@
   let initials = '';
   let name = '';
   let errorMessage = null;
-  const correctInitials = 'MR'; 
 
   async function handleStart() {
       try{
@@ -15,9 +14,9 @@
           if (data['status']==='success'){
               sessionStorage.setItem('analyst_initials', initials);
               goto('/main');
-              
           }else{
               initials='';
+              name = ''
               throw new Error(`Failed to check analyst`);
           }
       } catch (err){
@@ -37,7 +36,7 @@
       if (data['status']==='success'){
           initials='';
           name='';
-          throw new Error('Initials are already in use');
+          throw new Error('Initials are already in use, Plese enter a new set of initials');
       }  
 
       const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}/${name}`,{
@@ -202,15 +201,15 @@
         placeholder="Enter your initials"
         bind:value={initials}
       />
-      <button on:click={handleStart}>START</button>
-
-      <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
-      <p class="register-sub">Don't have your initials registered?</p>
       <input
         type="text"
         placeholder="Enter your name"
         bind:value={name}
       />
+      <button on:click={handleStart}>START</button>
+
+      <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
+      <p class="register-sub">Don't have your initials registered?</p>
       <button class="register-button" on:click={handleInitCreation(0)}>Register Analyst Initials</button>
       <button class="register-button" on:click={handleInitCreation(1)}>Register Lead Initials</button>
     </div>
