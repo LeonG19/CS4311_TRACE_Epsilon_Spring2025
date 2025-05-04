@@ -233,9 +233,11 @@ class Neo4jInteractive:
                     if "error" in result and isinstance(result["error"], str) and result["error"].lower() in ("true", "false"):
                         result["error"] = result["error"].lower() == "true"
 
-                    
-                    sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
-                    fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
+                    if result["type"] =="sqlinjection":
+                        sanitized_result = {key: self.sanitize_value(value) for key, value in result.items()}
+                        fields = ", ".join([f"{key}: ${key}" for key in sanitized_result])
+                    else:
+                        fields = ", ".join([f"{key}: ${key}" for key in result.keys()])
                     
                     
                     query = f"CREATE (r:Result {{ {fields} }})"
@@ -273,7 +275,7 @@ class Neo4jInteractive:
         WHERE toLower(sc.type) = 'crawler'
         }
         MATCH (p)-[:HAS_SCAN]->(s:ScanRun)
-        WHERE toLower(s.type) IN ['Crawler', 'Fuzzer', 'Bruteforce', 'crawler']
+        WHERE toLower(s.type) IN ['fuzzer', 'bruteforce', 'crawler']
         MATCH (s)-[:HAS_RESULT]->(r)
         RETURN r
         """
