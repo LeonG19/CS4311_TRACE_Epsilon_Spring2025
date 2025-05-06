@@ -5,16 +5,15 @@ import ssl
 import uuid
 import re
 
-URI="bolt://192.168.1.10:7687"
+URI="bolt://localhost:7687"
 User="neo4j"
-Password="testpassword"
+Password="Team_Blue"
 class Neo4jInteractive:
     def __init__(self, uri, user, password):
-        context = ssl._create_unverified_context()
         # ENCRYPTED and SSL_CONTEXT don't move, they are neccessary for Macs (Mayra in this case at least)
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=True, ssl_context=context)
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
-    def split_initials(initials: str):
+    def split_initials(self ,initials: str):
         match = re.match(r'^([A-Za-z]+)(\d*)$', initials)
         if match:
             letters = match.group(1)  # alphabetic part, e.g., "MR"
@@ -40,12 +39,12 @@ class Neo4jInteractive:
             """
             existing = session.run(check_query, base=base_initials)
             existing_initials = [record["existing"] for record in existing]
+            new_initials= base_initials
 
-            count = 1
             while new_initials in existing_initials:
-                initials, number = self.split_initials(base_initials)
+                initials, number = self.split_initials(new_initials)
                 if number:
-                    new_initials = initials + str(int(number) + 1)
+                    new_initials = initials + str(int(number)+1)
                 else:
                     new_initials = initials + str(1)
 
@@ -627,3 +626,4 @@ def is_ip_valid(ip):
             return False
     
     return True
+    
