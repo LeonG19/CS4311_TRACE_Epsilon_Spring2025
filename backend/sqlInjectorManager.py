@@ -48,7 +48,7 @@ class SQLInjectionManager:
                     "target": target_url,
                     "port": port,
                     "timeout": timeout,
-                    "headers": headers,
+                    "headers": json.dumps(headers),  # Convert headers dict to string
                     "payload": payload,
                     "status_code": response.status_code,
                     "snippet": useful_data[:300] if useful_data else "No useful data",
@@ -65,7 +65,7 @@ class SQLInjectionManager:
                     "target": target_url,
                     "port": port,
                     "timeout": timeout,
-                    "headers": headers,
+                    "headers": json.dumps(headers),  # Convert headers dict to string
                     "payload": payload,
                     "error": str(e),
                     "vulnerable": False
