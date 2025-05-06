@@ -1,5 +1,7 @@
 <script>
   import { preventDefault } from "svelte/legacy";
+  import {onMount} from "svelte";
+  
 
   // Input conf
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", required: true };
@@ -13,6 +15,7 @@
     { id: "proxy", label: "Proxy", type: "text", example: "http://proxy:port", required: false },
     { id: "additional_parameters", label: "Additional Parameters", type: "text", example: "NULL", required: false }
   ];
+  
 
   // State variables
   let fuzzerParams = { target_url: "", word_list: "", show_results: true };
@@ -25,6 +28,7 @@
   let activeController = null;
   let popoutWindow = null;
   let terminalOutput = [];
+  let projectName = "";
   
   // Progress tracking
   let progress = 0;
@@ -43,6 +47,11 @@
   // Sorting configuration
   let sortConfig = { column: "", direction: 'asc' };
 
+  /*onMount(async()=>{
+    projectName= sessionStorage.getItem('name');
+    console.log("Project Name:", projectName);
+  })
+*/
   // Navigation functions
   function goBack() { window.location.href = "/main/tools"; }
   
@@ -240,6 +249,34 @@
     }
   }
 
+  onMount(() => {
+  projectName = sessionStorage.getItem('name');
+  console.log("Project Name:", projectName);
+  fuzzerParams.project_name = projectName;
+});
+
+async function submitfuzzerResultsToProject() {
+    try {
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/fuzzer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(results),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`Saved ${body.inserted} results for ${projectName}`);
+      } else {
+        console.error("Save failed:", body.detail || body.error);
+      }
+    } catch (e) {
+      console.error("Network error on submit:", e);
+    }
+  }
+
+
   // File handle
   async function handleFile(event) {
     const fileInput = event.target;
@@ -431,6 +468,7 @@
         
         if (done) {
           stopTimer();
+          await submitfuzzerResultsToProject();
           break;
         }
         

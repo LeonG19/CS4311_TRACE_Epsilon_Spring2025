@@ -2,8 +2,8 @@
   import { goto } from '$app/navigation'; // Import the goto function for navigation
 
   let initials = '';
+  let name = '';
   let errorMessage = null;
-  const correctInitials = 'MR'; 
 
   async function handleStart() {
       try{
@@ -14,9 +14,9 @@
           if (data['status']==='success'){
               sessionStorage.setItem('analyst_initials', initials);
               goto('/main');
-              
           }else{
               initials='';
+              name = ''
               throw new Error(`Failed to check analyst`);
           }
       } catch (err){
@@ -25,21 +25,29 @@
       }
   }
 
-  async function handleInitCreation() {
-    const formData = new FormData();
-    formData.append('analyst_initials', initials);
-
+  async function handleInitCreation(type) {
     try {
-      const response = await fetch(`http://localhost:8000/create_initials/${initials}/`,{
+      const verification = await fetch(`http://localhost:8000/analyst/${initials}/`,{
+         method: 'POST'
+      });
+
+      const data= await verification.json();
+
+      if (data['status']==='success'){
+          initials='';
+          name='';
+          throw new Error('Initials are already in use, Plese enter a new set of initials');
+      }  
+
+      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}/${name}`,{
           method: 'POST',
-          body: formData
       });
 
       if (response.ok) {
           handleStart(); //Handle login after creating analyst
       } else {
           const data = await response.json();
-          throw new Error( data.error || 'Failed to create analyst initials');
+          throw new Error( data.error || 'Failed to create analyst');
       }
       
     } catch (err) {
@@ -119,9 +127,9 @@
 
   /*grey box*/
   .welcome-box {
-    width: 300px;
-    height: 300px;
-    display: flex;
+    width: 450px;
+    height: 400px;
+    /*display: flex;*/
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -146,7 +154,7 @@
 
   .welcome-box button {
     font-size: 1rem;
-    padding: 0.5rem;
+    padding: 1rem;
     width: 60%;
     background-color: #3b82f6;
     color: white;
@@ -162,6 +170,8 @@
 
   .register-button{
     background-color: #555555 !important;
+    width: 45% !important;
+    display:inline-block !important;
   }
 
   .register-button:hover{
@@ -191,11 +201,17 @@
         placeholder="Enter your initials"
         bind:value={initials}
       />
+      <input
+        type="text"
+        placeholder="Enter your name"
+        bind:value={name}
+      />
       <button on:click={handleStart}>START</button>
 
       <!--  Button to register new initials to the database, they will be registered as a normal analyst -->
       <p class="register-sub">Don't have your initials registered?</p>
-      <button class="register-button" on:click={handleInitCreation}>Register Initials</button>
+      <button class="register-button" on:click={handleInitCreation(0)}>Register Analyst Initials</button>
+      <button class="register-button" on:click={handleInitCreation(1)}>Register Lead Initials</button>
     </div>
   </main>
 </div>

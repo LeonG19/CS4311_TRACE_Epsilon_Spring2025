@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import { preventDefault } from "svelte/legacy";
   let wordlistInput = { id: "word_list", type: "file", accept: ".json, .txt", label: "Word List", value: "", example: "Ex: wordlist.txt", required: true };
 
@@ -12,9 +13,10 @@
   ];
 
   let bruteForceParams = {
-    target_url: "",
+    target_url: "", 
     word_list: "",
-    show_results: true  // Initialize show_results option
+    additional_param: "",
+    show_results: true
   };
 
   let results = [];
@@ -24,9 +26,13 @@
   let showResultsButton = false; // New state variable
   let selectedFileName = "No file selected"; // Track selected file name
   let fileUploaded = false; // Track if file was successfully uploaded
+  let activeController = null;
   let showTerminal = false;
   let logOutput = '';
   let visibleResults=[];
+  let popoutWindow;
+  let terminalOutput = []; 
+  let formattedLine;
 
   // Track progress
   let progress = 0;
@@ -36,6 +42,14 @@
   let startTime = null;
   let elapsedTime = "0s";
   let timerInterval;
+
+  // Control flags
+  let pauseAvailable = true;
+  let resumeAvailable = false;
+
+  //database project name for path
+  let projectName = ""; // to store the project name
+  
 
   //applying crawler sorter i added over there to here
   let sortConfig = {
@@ -64,32 +78,72 @@
   function runningToResults() {
     isRunning = false;
     displayingResults = true;
-    showResultsButton = false; // Hide button after navigating
+    showResultsButton = true; // Hide button after navigating
   }
 
   function resultsToParams() {
     displayingResults = false;
+    isRunning = false;   
     acceptingParams = true;
     results = [];
   }
 
-  function pauseBruteForce() {
-    console.log("Pause clicked");
+  function pauseBruteForce(e) {
+    preventDefault(e);
+    pauseToResumeButton();
+    stopTimer();
+    addToTerminal('Pausing BruteForce..', 'warning');
+    apiCall('pause_brute', () => {}, 'BruteForce paused');
+  }
+
+  function resumeBruteForce(e){
+    preventDefault(e);
+    resumeToPauseButton();
+    startTimer();
+    addToTerminal('Resuming BruteForce...', 'success');
+    apiCall('resume_brute', () => {}, 'BruteForce resumed');
   }
 
   function stopBruteForce() {
-    console.log("Stop clicked");
-    isRunning = false;
     stopTimer();
-    showResultsButton = true;
+    isRunning = false;
+    displayingResults= true;
+    addToTerminal('Stopping BruteForce...', 'error');
+    
+    if (activeController) activeController.abort();
+    apiCall('stop_brute', () => {}, 'BruteForce stopped');
   }
 
   function restartBruteForce() {
     console.log("Restart clicked");
+    terminalOutput = [];
+
+    // If the popout is open, clear its contents
+    if (popoutWindow && !popoutWindow.closed) {
+      const termEl = popoutWindow.document.getElementById('terminal-content');
+      if (termEl) termEl.innerHTML = '';
+    }
+
     results = [];
-    displayingResults = false; // 🔧 hide final results
+    displayingResults = false; // hide final results
     stopTimer();
     handleSubmit(); // starts fresh
+  }
+
+  // Button state 
+  function pauseToResumeButton() {
+    pauseAvailable = false;
+    resumeAvailable = true;
+  }
+  
+  function resumeToPauseButton() {
+    resumeAvailable = false;
+    pauseAvailable = true;
+  }
+
+  function resetTimer() {
+    stopTimer();
+    elapsedTime = "0s";
   }
 
   function dynamicBruteForceParamUpdate(id, value) {
@@ -106,7 +160,32 @@
       const numeric = parseInt(value);
       if (!isNaN(numeric)) bruteForceParams.filter_by_content_length = numeric;
     }
-    //console.log(`Updated ${id} to ${value}`);
+
+    if (id === 'additional_param') {
+    bruteForceParams.additional_param = value;
+    }
+
+  }
+
+  // API call functions with unified error handling
+  async function apiCall(endpoint, onSuccess, messagePrefix) {
+    try {
+      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        onSuccess(result);
+        addToTerminal(`${messagePrefix}: ${result.message}`, endpoint.includes('resume') ? 'success' : 
+                                                             endpoint.includes('pause') ? 'warning' : 'error');
+      } else {
+        addToTerminal(`Error with ${endpoint}: ${response.statusText}`, 'error');
+      }
+    } catch (error) {
+      addToTerminal(`Error: ${error.message}`, 'error');
+    }
   }
 
   // Function to handle file upload for wordlist
@@ -163,6 +242,7 @@
 
   // inputs to be sent to the backend for brute-forcing
   async function handleSubmit() {
+    console.log("handleSubmit called");
     if (!bruteForceParams.target_url) {
       alert('Target URL is required');
       return;
@@ -172,14 +252,24 @@
       alert('Please upload a wordlist file first');
       return;
     }
+
+    console.log("Brute force parameters before fetch:", bruteForceParams); // <--- ADD THIS
     
+    // Reset state
     paramsToRunning();
+    resetTimer();
     startTimer();
     progress = 0;
     processedRequests = 0;
     filteredRequests = 0;
     requestsPerSecond = 0;
     results = [];
+    logOutput = [];
+    pauseAvailable = true;
+    resumeAvailable = false;
+
+    //abort
+    activeController = new AbortController();
 
     try {
       const response = await fetch('http://localhost:8000/bruteforcer', {
@@ -188,6 +278,7 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(bruteForceParams),
+        signal: activeController.signal
       });
 
       if (!response.ok) {
@@ -204,6 +295,8 @@
         showResultsButton = true;
         stopTimer();
         runningToResults(); // << This line was missing
+        // Submit the brute-force results to the project
+        await submitbruteResultsToProject(); // Submit results after brute force finishes
         break;
         }
 
@@ -222,16 +315,18 @@
             requestsPerSecond = update.requests_per_second || requestsPerSecond;
 
             if (update.payload) {
+              // Add to terminal with the full result object
+              addToTerminal(update, '');
               results = [...results, update];
-              logOutput += `[${update.response}] ${update.payload} \t ${update.length} bytes \t ${update.words} words\n`;
+              logOutput += `[${update.response}] ${update.payload} \t ${update.length} bytes \t ${update.words} words\n`
             }
           } catch (error) {
-            console.error('Error parsing update:', error);
+            addToTerminal(`ERROR: ${error.message}`, 'error');
           }
         }
       }
     } catch (error) {
-      console.error('Error during brute force:', error);
+      addToTerminal(`ERROR: ${error.message}`, 'error');
       showResultsButton = true;
       stopTimer();
     }
@@ -274,6 +369,187 @@
       return 0;
     });
   }
+
+    // toggleTerminal function
+  function toggleTerminal(e) {
+    if (e) preventDefault(e);
+    
+    if (popoutWindow && !popoutWindow.closed) {
+      popoutWindow.focus();
+      return;
+    }
+    
+    const width = 600, height = 400;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    
+    popoutWindow = window.open('', 'BruteForceWindow', 
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+    
+    const doc = popoutWindow.document;
+    doc.title = "BruteForce Terminal Output";
+    
+    // Add styles
+    doc.head.innerHTML = `
+      <style>
+        body {
+          font-family: monospace;
+          margin: 0;
+          padding: 0;
+          background-color: #242424;
+          color: #FFFFFF;
+        }
+        .terminal-header {
+          background-color: #333;
+          padding: 8px 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .terminal-content {
+          padding: 10px;
+          height: calc(100vh - 40px);
+          overflow-y: auto;
+        }
+        .terminal-line {
+          white-space: pre;
+          margin-bottom: 3px;
+        }
+        .success { color: #4CAF50; }
+        .warning { color: #FF9800; }
+        .error { color: #F44336; }
+        .auto-scroll {
+          margin: 0 15px;
+          display: flex;
+          align-items: center;
+          color: white;
+        }
+        .auto-scroll input {
+          margin-right: 5px;
+        }
+      </style>
+    `;
+    
+    // auto-scroll checkbox for terminal
+    doc.body.innerHTML = `
+      <div class="terminal-header">
+        <span>BruteForce Terminal Output</span>
+        <div class="auto-scroll">
+          <input type="checkbox" id="auto-scroll" checked>
+          <label for="auto-scroll">Auto-scroll</label>
+        </div>
+      </div>
+      <div id="terminal-content" class="terminal-content"></div>
+    `;
+    
+    //  add lines
+    const script = doc.createElement('script');
+    script.textContent = `
+      const terminalContent = document.getElementById('terminal-content');
+      const autoScrollCheckbox = document.getElementById('auto-scroll');
+      
+      window.addTerminalLine = function(text, type) {
+        const line = document.createElement('div');
+        line.className = 'terminal-line';
+        if (type) {
+          line.classList.add(type);
+        }
+        line.textContent = text;
+        terminalContent.appendChild(line);
+        
+        if (autoScrollCheckbox.checked) {
+          terminalContent.scrollTop = terminalContent.scrollHeight;
+        }
+      };
+    `;
+    doc.body.appendChild(script);
+    
+    // Add existing lines
+    terminalOutput.forEach(entry => {
+      try {
+        popoutWindow.addTerminalLine(entry.text, entry.type);
+      } catch (e) {
+        console.error('Error adding line to terminal:', e);
+      }
+    });
+  }
+
+  function addToTerminal(result, type = '') {
+    if (typeof result === 'string') {
+      // just log the message
+      formattedLine = result;
+    } else {
+      // assume it's a full scan-result object
+      const id   = String(result.id || '').padStart(2, '0');
+      formattedLine = `${id} : ${result.response} ${result.lines} L ${result.words} W ${result.chars} CH`;
+    }
+    logOutput += formattedLine + '\n';
+    terminalOutput.push({ text: formattedLine, type });
+    if (popoutWindow && !popoutWindow.closed) {
+      popoutWindow.addTerminalLine(formattedLine, type);
+    }
+  }
+
+  onMount(() => {
+  projectName = sessionStorage.getItem('name');
+  console.log("Project Name:", projectName);
+  bruteForceParams.project_name = projectName;
+});
+  // this is where we pass the file to db
+  /*
+  async function submitbruteResultsToProject() {
+    try {
+      // Ensure the `results` variable holds th"""e actual brute force results as a JSON object
+      const resultsData = {
+        type: "bruteforcer", // Set type to "bruteforcer"
+        projectName: projectName, // Ensure this is set correctly before calling
+        results: results // This is the actual results from brute force, should be a JSON object
+      };
+
+      console.log("Submitting brute force results to project:", resultsData); // Debugging log
+
+      // Sending the POST request with the results to the appropriate endpoint
+      const response = await fetch(`http://localhost:8000/submit_results/bruteforcer/${projectName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resultsData) // Send the `resultsData` as the body
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit results: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log("Results submitted successfully:", result);
+      addToTerminal('Results submitted successfully', 'success'); // Update the terminal with success message
+    } catch (error) {
+      console.error("Error submitting brute force results:", error);
+      addToTerminal(`Error submitting results: ${error.message}`, 'error'); // Update the terminal with error message
+    }
+  }
+*/
+
+async function submitbruteResultsToProject() {
+    try {
+      const resp = await fetch(
+        `http://localhost:8000/submit_results/bruteforcer/${projectName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(results),
+        }
+      );
+      const body = await resp.json();
+      if (body.status === "success") {
+        console.log(`Saved ${body.inserted} results for ${projectName}`);
+      } else {
+        console.error("Save failed:", body.detail || body.error);
+      }
+    } catch (e) {
+      console.error("Network error on submit:", e);
+    }
+  }
+
 </script>
 
 <div class="bruteForceConfigPage">
@@ -282,7 +558,7 @@
 
     {#if acceptingParams}
       <div>
-        <form on:submit="{(e) => {e.preventDefault(); handleSubmit()}}">
+        <form on:submit={(e) => {e.preventDefault(); handleSubmit()}}>
           {#each bruteForceInput as param}
             {#if param.type === 'file'}
               <div>
@@ -325,6 +601,7 @@
           </div>
 
           <button type="submit" class="submit-button">Start Brute Force</button>
+          <a href="/main/tools" class="home-button">Return To Tools</a>
 
         </form>
       </div>
@@ -465,9 +742,6 @@
             {/each}
           </tbody>
         </table>
-        {#if showResultsButton}
-          <button on:click={exportResults}>Export Results</button>
-        {/if}
         </div>
       </div>
     {/if}
@@ -477,10 +751,15 @@
   <!-- ✅ These are always visible when done -->
   {#if isRunning || displayingResults}
   <div class="action-buttons-bottom">
+    {#if pauseAvailable}
     <button on:click={pauseBruteForce}>Pause</button>
+    {/if}
+    {#if resumeAvailable}
+      <button on:click={resumeBruteForce}>Resume</button>
+    {/if}
     <button on:click={stopBruteForce}>Stop</button>
     <button on:click={restartBruteForce}>Restart</button>
-    <button on:click={() => showTerminal = true}>View Terminal</button>
+    <button on:click={toggleTerminal}>View Terminal</button>
     <button on:click={() => resultsToParams()}>Back to Param Setup</button>
     {#if showResultsButton}
       <button on:click={exportResults}>Export Results</button>
@@ -491,20 +770,6 @@
 <!-- Optional fallback -->
 {#if !acceptingParams && !isRunning && !displayingResults}
   <p style="color: red; text-align: center; margin-top: 2rem;">⚠️ Nothing is being displayed. Check state logic.</p>
-{/if}
-
-{#if showTerminal}
-  <div class="terminal-overlay">
-    <div class="terminal-window">
-      <div class="terminal-header">
-        <span>Terminal Output</span>
-        <button on:click={() => showTerminal = false}>✖</button>
-      </div>
-      <div class="terminal-content">
-        <pre>{logOutput}</pre>
-      </div>
-    </div>
-  </div>
 {/if}
 
 <style>

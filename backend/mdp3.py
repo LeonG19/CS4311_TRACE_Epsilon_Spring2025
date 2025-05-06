@@ -1,419 +1,441 @@
 import random
 import re
+import math
+import unicodedata
 from collections import defaultdict
-import numpy as np
 from typing import Dict, List, Tuple, Set
 import csv
 import os
 import time
 import requests
 from bs4 import BeautifulSoup
+import asyncio
+import aiohttp
 
+# Global stop flag
+def stop_generation():
+    return False
 
-
-
-
-
-
-#Natural Language Processing routine that cleans CSV text 
+# NLP routine: normalize text to ASCII and retain only letters, digits, and common symbols
 def nlp_subroutine(csv_path: str):
-    stopwords = {"the", "and", "or"} #Words to clean from CSV file
+    """
+    Reads a CSV with columns id, content, url; cleans content by:
+      1. ASCII-normalizing (remove non-English chars)
+      2. Splitting hyphenated compounds
+      3. Removing definite, demonstrative, distributive, and interrogative determiners
+      4. Removing possessive determiners (with a simple title-case exception)
+      5. Dropping all tokens <4 chars unless they’re acronyms
+    """
+    # 1. Define determiner sets
+    DETERMINERS = {
+        "the",            # definite
+        "this","that","these","those",           # demonstrative
+        "each","every","either","neither",       # distributive
+        "which","what","whose"                   # interrogative
+    }
+    POSSESSIVES = {"my","your","his","her","its","our","their"}
+
     if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+        raise FileNotFoundError(f"CSV not found: {csv_path}")
+
     cleaned_rows = []
-    with open(csv_path, "r", encoding="utf-8") as infile:
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames
-        if not fieldnames or not {"id", "content", "url"}.issubset(fieldnames):
-            raise ValueError("CSV must contain columns: id, content, url")
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fields = reader.fieldnames or []
+        if not {"id","content","url"}.issubset(fields):
+            raise ValueError("CSV must contain id, content, url")
+
         for row in reader:
-            text = row["content"] if row["content"] else ""
-            words = re.findall(r"\w+", text, flags=re.IGNORECASE)
-            filtered_words = [
-                word for word in words
-                if word.lower() not in stopwords
-            ]
-            cleaned_text = " ".join(filtered_words)
-            row["content"] = cleaned_text
+            raw = row.get("content","") or ""
+
+            # 2. Unicode → ASCII (strip accents & non-ASCII)
+            text = unicodedata.normalize("NFKD", raw)
+            text = text.encode("ascii", "ignore").decode("ascii")
+
+            # 3. Split hyphenated compounds (sister-in-law → sister in law)
+            text = re.sub(r"(?<=\w)-(?=\w)", " ", text)
+
+            # 4. Tokenize on non-word boundaries (keep letters, digits, & & .)
+            tokens = re.findall(r"[A-Za-z0-9&\.]+", text)
+
+            out_tokens = []
+            for i, tok in enumerate(tokens):
+                low = tok.lower()
+
+                # a) Remove those determiners
+                if low in DETERMINERS:
+                    continue
+
+                # b) Remove possessive determiners, except if next token is TitleCase
+                if low in POSSESSIVES:
+                    nxt = tokens[i+1] if i+1 < len(tokens) else ""
+                    if not re.match(r"[A-Z]", nxt):
+                        continue
+
+                # c) Length <4? keep only if all-caps acronym (≥2 letters)
+                if len(tok) < 4:
+                    # acronym e.g. NASA, H.P. (no digits)
+                    stripped = tok.replace(".","").replace("&","")
+                    if not (stripped.isupper() and len(stripped) >= 2 and stripped.isalpha()):
+                        continue
+
+                out_tokens.append(tok)
+
+            row["content"] = " ".join(out_tokens)
             cleaned_rows.append(row)
-    #Overwrite original CSV with cleaned text
-    with open(csv_path, "w", newline="", encoding="utf-8") as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+
+    # 5. Overwrite CSV
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()
         writer.writerows(cleaned_rows)
-    print(f"Cleaned CSV '{csv_path}' file has been generated.")
 
-#Load URLs from a CSV file with columns 'id' and 'website'.
-def load_urls_from_csv(csv_path: str) -> List[str]:
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
-    try:
-        urls = []
-        with open(csv_path, 'r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            if not {'id', 'website'}.issubset(set(reader.fieldnames or [])):
-                raise ValueError("CSV must contain columns: id, website")
-            for row in reader:
-                if row['website']:
-                    urls.append(row['website'].strip())
-        return urls
-    except csv.Error as e:
-        raise ValueError(f"Error reading CSV file: {e}")
+# Load URLs from CSV
+def load_urls_from_csv(path: str) -> List[str]:
+    if not os.path.exists(path): raise FileNotFoundError(path)
+    urls: List[str] = []
+    with open(path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        if not {'id','website'}.issubset(reader.fieldnames or []): raise ValueError
+        for r in reader:
+            if r['website']:
+                urls.append(r['website'].strip())
+    return urls
 
-#Web scraper functions and will pull something out of the URLs provided.
+# Web scraper
 class WebScraper:
-    # Initialize with list of URLs
-    def __init__(self, urls):
+    def __init__(
+        self,
+        urls: List[str],
+        batch_size: int = 20,
+        concurrency: int = 5
+    ):
         self.urls = urls
+        self.batch_size = batch_size
+        self.semaphore = asyncio.Semaphore(concurrency)
 
-    # Scrape text content from web pages
-    def scrape_pages(self):
-        results = []
-        for i, url in enumerate(self.urls, 1):
-            try:
-                response = requests.get(url, timeout=10)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
-                # Extract text from p, h1, h2, h3, and span tags
-                text = ' '.join([tag.get_text() for tag in soup.find_all(['p', 'h1', 'h2', 'h3', 'span'])])
-                results.append((i, text, url))
-                time.sleep(1)  # Be polite to servers
-            except Exception as e:
-                print(f"Error scraping {url}: {e}")
-        return results
+    async def _fetch(self, session: aiohttp.ClientSession, url: str) -> str:
+        async with self.semaphore:
+            async with session.get(url, timeout=10) as resp:
+                resp.raise_for_status()
+                return await resp.text()
 
-    # Generate CSV file with scraped data
-    def generate_csv(self, filename):
-        data = self.scrape_pages()
-        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-            csv_writer = csv.writer(csvfile)
-            csv_writer.writerow(['id', 'content', 'url'])  # Header
-            csv_writer.writerows(data)
-        print(f"CSV file '{filename}' has been generated.")
-        
-# Load web text from a CSV file
+    async def _parse(self, html: str) -> Tuple[str, str, str, str]:
+        soup = BeautifulSoup(html, 'html.parser')
+
+        text = ' '.join(tag.get_text(strip=True)
+                        for tag in soup.find_all(['p','h1','h2','h3','span']))
+        logos = ' '.join(img['alt'].strip()
+                         for img in soup.find_all('img', alt=True))
+        labels = ' '.join(lbl.get_text(strip=True)
+                          for lbl in soup.find_all('label'))
+        classes = ' '.join(
+            cls
+            for elem in soup.find_all(class_=True)
+            for cls in elem.get('class', [])
+        )
+        return text, logos, labels, classes  # :contentReference[oaicite:6]{index=6}
+
+    async def _scrape(self, session: aiohttp.ClientSession, url: str) -> Tuple[str,str,str,str,str]:
+        html = await self._fetch(session, url)
+        text, logos, labels, classes = await self._parse(html)
+        return url, text, logos, labels, classes
+
+    async def _process_batch(self, batch: List[str]) -> List[Tuple[str,str,str,str,str]]:
+        async with aiohttp.ClientSession() as session:
+            tasks = [self._scrape(session, url) for url in batch]
+            results = []
+            for coro in asyncio.as_completed(tasks):
+                try:
+                    row = await coro
+                    results.append(row)
+                except Exception:
+                    continue
+            return results  # :contentReference[oaicite:7]{index=7}
+
+    async def generate_csv(self, output_path: str = "web_text.csv"):
+        """
+        Scrape all URLs in batches, then write a single CSV:
+            id, content, url
+
+        content = text + logos + labels + classes
+        """
+        all_rows: List[Tuple[int, str, str]] = []
+        total = len(self.urls)
+
+        # 1) Fetch in batches
+        for i in range(0, total, self.batch_size):
+            batch = self.urls[i : i + self.batch_size]
+            rows = await self._process_batch(batch)
+
+            # 2) Collapse each row’s pieces into a single 'content' string
+            for idx, (url, text, logos, labels, classes) in enumerate(rows, start=i+1):
+                parts = [text, logos, labels, classes]
+                # join non-empty bits with a space
+                content = " ".join(p for p in parts if p)
+                all_rows.append((idx, content, url))
+
+        # 3) Write the single CSV
+        with open(output_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'content', 'url'])
+            writer.writerows(all_rows)
+
+        print(f"Wrote {len(all_rows)} records to {output_path}")
+# Load web text
 def load_web_text(csv_path: str) -> str:
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
-    try:
-        with open(csv_path, 'r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            if not {'id', 'content', 'url'}.issubset(set(reader.fieldnames or [])):
-                raise ValueError("CSV must contain columns: id, content, url")
-            contents = []
-            for row in reader:
-                if row['content']:
-                    contents.append(row['content'].lower())
-        return " ".join(contents)
-    except csv.Error as e:
-        raise ValueError(f"Error reading CSV file: {e}")
+    if not os.path.exists(csv_path): raise FileNotFoundError(csv_path)
+    out: List[str] = []
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        rdr = csv.DictReader(f)
+        if not {'id','content','url'}.issubset(rdr.fieldnames or []): raise ValueError
+        for r in rdr:
+            if r['content']:
+                out.append(r['content'].lower())
+    return ' '.join(out)
 
-# Load wordlist from a file
-def load_wordlist(file_path: str) -> List[str]:
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Wordlist file not found: {file_path}")
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            words = [line.strip().lower() for line in file if line.strip()]
-        return words
-    except Exception as e:
-        raise ValueError(f"Error reading wordlist file: {e}")
+# Load wordlist
+def load_wordlist(fp: str) -> List[str]:
+    if not os.path.exists(fp): raise FileNotFoundError(fp)
+    with open(fp, 'r', encoding='utf-8') as f:
+        return [l.strip().lower() for l in f if l.strip()]
 
-# Class for managing the Markov Decision Process for generating credentials
+# Credential MDP core
 class CredentialMDP:
     def __init__(self, order: int = 2, gamma: float = 0.9):
         self.order = order
         self.gamma = gamma
-        self.q_values: Dict[str, Dict[Tuple[str, str], float]] = defaultdict(lambda: defaultdict(float))
-        self.state_transitions: Dict[str, Dict[str, Set[str]]] = defaultdict(lambda: defaultdict(set))
-        self.used_usernames: Set[str] = set()
-        self.epsilon = 0.1
-        self.learning_rate = 0.1
-        self.initial_states: List[str] = []
+        self.initial_gamma = gamma
+        self.gamma_increment = (0.99 - gamma) / 10000.0
+        self.epsilon0 = 1.0
+        self.min_eps = 0.01
+        self.eps_decay = math.log(2) / 50
+        self.steps = 0
+        self.update_cnt = 0
+        self.q: Dict[str, Dict[Tuple[str, str], float]] = defaultdict(lambda: defaultdict(float))
+        self.trans: Dict[str, Dict[str, Set[str]]] = defaultdict(lambda: defaultdict(set))
+        self.init_states: List[str] = []
 
-    # Calculate the strength of a password
-    def calculate_password_strength(self, password: str) -> float:
+    def calc_pwd(self, pwd: str) -> float:
+        s = 0.0
+        if len(pwd) >= 12: s += 0.25
+        if re.search(r'[!@#$%^&*]', pwd): s += 0.25
+        if len(set(pwd)) >= 8: s += 0.20
+        if re.search(r'\d', pwd): s += 0.15
+        if re.search(r'[A-Z]', pwd): s += 0.15
+        return s
+
+    def calc_user(self, user: str) -> float:
+        reserved = {'admin', 'root'}
         score = 0.0
-        if len(password) >= 12:
-            score += 0.3
-        if re.search(r'[A-Z]', password):
-            score += 0.2
-        if re.search(r'[0-9]', password):
-            score += 0.2
-        if re.search(r'[!@#$%^&*]', password):
-            score += 0.2
-        if len(set(password)) >= 8:
-            score += 0.1
+        # Uniqueness
+        score += 0.50
+        # Length
+        if len(user) >= 6: score += 0.20
+        # Starts with letter
+        if re.match(r'^[A-Za-z]', user): score += 0.20
+        # Penalize obvious names
+        if user.lower() in reserved: score -= 0.10
         return score
 
-    # Calculate the quality of a username
-    def calculate_username_quality(self, username: str) -> float:
-        score = 0.0
-        if len(username) >= 6:
-            score += 0.3
-        if username not in self.used_usernames:
-            score += 0.4
-        if re.match(r'^[a-z]', username):
-            score += 0.2
-        if not re.search(r'\s', username):
-            score += 0.1
-        return score
+    def get_reward(self, state: str, action: str, ch: str) -> float:
+        typ = 'username' if state.startswith('username') else 'password'
+        curr = state.split('_', 1)[1] + ch
+        base = (self.calc_user(curr) if typ == 'username' else self.calc_pwd(curr)) / len(curr)
+        bonus = 0.0
+        if typ == 'username' and ch.isdigit(): bonus += 0.10
+        if re.search(r'[!@#$%^&*]', ch): bonus += 0.10
+        return base + bonus
 
-    # Get the reward for a state-action pair
-    def get_reward(self, state: str, action: str, next_char: str) -> float:
-        if 'username' in state:
-            current = state[9:] + next_char
-            return self.calculate_username_quality(current) / len(current)
-        else:
-            current = state[9:] + next_char
-            return self.calculate_password_strength(current) / len(current)
+    def actions(self, state: str) -> List[str]:
+        return list(self.trans[state].keys())
 
-    # Get possible actions for a state
-    def get_possible_actions(self, state: str) -> List[str]:
-        return list(self.state_transitions[state].keys())
-
-    # Choose an action based on epsilon-greedy strategy
     def choose_action(self, state: str) -> Tuple[str, str]:
-        possible_actions = self.get_possible_actions(state)
-        if not possible_actions:
+        self.steps += 1
+        eps = max(self.min_eps, self.epsilon0 * math.exp(-self.eps_decay * self.steps))
+        # update gamma
+        self.gamma = min(0.99, self.gamma + self.gamma_increment)
+        possible = self.actions(state)
+        if not possible:
             return "", ""
-
-        if random.random() < self.epsilon:
-            action = random.choice(possible_actions)
-            next_char = random.choice(list(self.state_transitions[state][action]))
+        if random.random() < eps:
+            act = random.choice(possible)
+            nxt = random.choice(list(self.trans[state][act]))
         else:
-            # Choose best action based on Q-values
-            action_values = {}
-            for act in possible_actions:
-                if self.state_transitions[state][act]:
-                    value = max([self.q_values[state][(act, nxt_ch)] for nxt_ch in self.state_transitions[state][act]])
-                    action_values[act] = value
+            values = {act: max(self.q[state][(act, nxt)] for nxt in self.trans[state][act]) for act in possible}
+            act = max(values, key=values.get)
+            nxt = random.choice(list(self.trans[state][act]))
+        return act, nxt
 
-            if action_values:
-                action = max(action_values.items(), key=lambda x: x[1])[0]
-                next_char = random.choice(list(self.state_transitions[state][action]))
-            else:
-                action = random.choice(possible_actions)
-                next_char = random.choice(list(self.state_transitions[state][action]))
+    def update_q(self, state: str, action: str, nxt: str, next_state: str, reward: float):
+        self.update_cnt += 1
+        alpha = 1 / math.sqrt(1 + self.update_cnt)
+        next_vals = [self.q[next_state][(act, c)] for act in self.actions(next_state) for c in self.trans[next_state][act]] or [0]
+        self.q[state][(action, nxt)] += alpha * (reward + self.gamma * max(next_vals) - self.q[state][(action, nxt)])
 
-        return action, next_char
-
-    # Update Q-value based on the Bellman equation
-    def update_q_value(self, state: str, action: str, next_char: str, next_state: str, reward: float):
-        next_action_values = []
-        for next_action in self.get_possible_actions(next_state):
-            for next_next_char in self.state_transitions[next_state][next_action]:
-                next_action_values.append(self.q_values[next_state][(next_action, next_next_char)])
-
-        max_next_q = max(next_action_values, default=0)
-        current_q = self.q_values[state][(action, next_char)]
-        new_q = current_q + self.learning_rate * (reward + self.gamma * max_next_q - current_q)
-        self.q_values[state][(action, next_char)] = new_q
-
-# Class for generating credentials using Markov Decision Process
+# Generator class
 class CredentialGeneratorMDP:
-    def __init__(self, csv_path: str, wordlist_path: str, user_include_char: bool, user_include_num: bool, user_include_sym: bool,user_length: int, pass_include_char: bool, pass_include_num: bool, pass_include_sym: bool, pass_length: int):
+    def __init__(
+        self,
+        csv_path: str,
+        wl_path: str,
+        u_c: bool,
+        u_n: bool,
+        u_s: bool,
+        u_len: int,
+        p_c: bool,
+        p_n: bool,
+        p_s: bool,
+        p_len: int
+    ):
         try:
-            self.web_text = load_web_text(csv_path)
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Error loading input files: {e}")
-            self.web_text = ""
+            self.text = load_web_text(csv_path)
+        except:
+            self.text = ""
         try:
-            self.wordlists = load_wordlist(wordlist_path)
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Error loading input files: {e}")
-            self.wordlists = ""
+            self.words = load_wordlist(wl_path)
+        except:
+            self.words = []
+        self.u_c, self.u_n, self.u_s = u_c, u_n, u_s
+        self.p_c, self.p_n, self.p_s = p_c, p_n, p_s
+        if u_len < 12:
+            u_order = 3
+        else:
+            u_order = 4
+        if p_len < 12:
+            p_order = 2
+        else:
+            p_order = 3
+       
+       
+        self.umdp = CredentialMDP(order=u_order)
+        self.pmdp = CredentialMDP(order=p_order)
+        self.min_ul = u_len
+        self.min_pl = p_len
+        self.usyms = set('!@#$%^&*()-_=+[]{}|;:\".<>/?~`')
+        self.psyms = self.usyms
 
-        self.user_include_char = user_include_char
-        self.user_include_num = user_include_num
-        self.user_include_sym = user_include_sym
-        
-        self.pass_include_char = pass_include_char
-        self.pass_include_num = pass_include_num
-        self.pass_include_sym = pass_include_sym
+    def allow_u(self, ch: str) -> bool:
+        return (ch.isalpha() and self.u_c) or (ch.isdigit() and self.u_n) or (ch in self.usyms and self.u_s)
 
-        self.username_mdp = CredentialMDP(order=2)
-        self.password_mdp = CredentialMDP(order=3)
-        self.min_username_length = int(user_length) 
-        self.min_password_length = int(pass_length)
-        self.stop_flag = False
+    def allow_p(self, ch: str) -> bool:
+        return (ch.isalpha() and self.p_c) or (ch.isdigit() and self.p_n) or (ch in self.psyms and self.p_s)
 
-    
-    def stop_generating(self):
-        self.stop_flag = True
+    def chars_u(self) -> str:
+        s = ''
+        if self.u_c: s += 'abcdefghijklmnopqrstuvwxyz'
+        if self.u_n: s += '0123456789'
+        if self.u_s: s += ''.join(self.usyms)
+        return s
 
-    def allowed_username_char(self, ch: str) -> bool:
-        # Check if the character is alphabetic and whether letters are allowed
-        if ch.isalpha() and not self.user_include_char:
-            return False
-        # Check if the character is a digit and whether digits are allowed
-        if ch.isdigit() and not self.user_include_num:
-            return False
-        # Check for special characters (a common set could be defined)
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.user_include_sym:
-            return False
-        return True
+    def chars_p(self) -> str:
+        s = ''
+        if self.p_c: s += 'abcdefghijklmnopqrstuvwxyz'
+        if self.p_n: s += '0123456789'
+        if self.p_s: s += ''.join(self.psyms)
+        return s
 
-    def allowed_password_char(self, ch: str) -> bool:
-        if ch.isalpha() and not self.pass_include_char:
-            return False
-        if ch.isdigit() and not self.pass_include_num:
-            return False
-        if ch in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`" and not self.pass_include_sym:
-            return False
-        return True
-    
-    def get_allowed_username_chars(self) -> str:
-        allowed = ""
-        if self.user_include_char:
-            allowed += "abcdefghijklmnopqrstuvwxyz"  # extend as needed (could add uppercase if allowed)
-        if self.user_include_num:
-            allowed += "0123456789"
-        if self.user_include_sym:
-            allowed += "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`"
-        return allowed
+    def preprocess(self, text: str) -> List[str]:
+        return [w for w in re.findall(r'\w+', text.lower()) if len(w) >= 4]
 
-    def get_allowed_password_chars(self) -> str:
-        allowed = ""
-        if self.pass_include_char:
-            allowed += "abcdefghijklmnopqrstuvwxyz"  # and possibly uppercase if desired
-        if self.pass_include_num:
-            allowed += "0123456789"
-        if self.pass_include_sym:
-            allowed += "!@#$%^&*()-_=+[]{}|;:'\",.<>?/~`"
-        return allowed
-
-    # Preprocess text data
-    def preprocess_text(self, text: str) -> List[str]:
-        words = re.findall(r'\w+', text.lower())
-        return [word for word in words if len(word) >= 4]
-
-    # Build state transitions for username and password generation
     def build_state_transitions(self):
-        if self.wordlists == "":
-            username_data = set(self.preprocess_text(self.web_text))
-            password_data = set(word for word in username_data if (len(word) >= 8 or word.isdigit()))
-        else:
-            username_data = set(self.preprocess_text(self.web_text) + self.wordlists)
-            password_data = set(word for word in username_data if (len(word) >= 8 or word.isdigit()))
-        print(username_data)
-        for word in username_data:
-            for i in range(len(word) - self.username_mdp.order):
-                candidate = word[i+self.username_mdp.order]
-                # Only add this transition if the candidate is allowed
-                if self.allowed_username_char(candidate):
-                    state = f"username_{word[i:i+self.username_mdp.order]}"
-                    action = candidate
-                    self.username_mdp.state_transitions[state][action].add(candidate)
-                    # When handling the initial state, check if every character in the state (excluding the prefix) is allowed.
-                    if i == 0:
-                        state_substring = word[i:i+self.username_mdp.order]
-                        allowed_chars = self.get_allowed_username_chars()  # Helper that returns a string of allowed characters.
-                        if all(ch in allowed_chars for ch in state_substring):
-                            self.username_mdp.initial_states.append(state)
+        self.umdp.trans.clear(); self.umdp.init_states.clear()
+        self.pmdp.trans.clear(); self.pmdp.init_states.clear()
+        base = set(self.preprocess(self.text)) | set(self.words)
+        # Username transitions
+        for w in base:
+            for i in range(len(w) - self.umdp.order):
+                c = w[i + self.umdp.order]
+                if not self.allow_u(c): continue
+                pref = w[i:i + self.umdp.order]
+                state_sub = ''.join('#' if ch in self.usyms else ch for ch in pref)
+                state = f"username_{state_sub}"
+                self.umdp.trans[state][c].add(c)
+                if i == 0 and all(self.allow_u(ch) for ch in pref):
+                    self.umdp.init_states.append(state)
+        # Fallback
+        allowed_u = self.chars_u()
+        if not self.umdp.init_states:
+            prefix = (allowed_u[0]*self.umdp.order) if allowed_u else 'a'*self.umdp.order
+            self.umdp.init_states.append(f"username_{prefix}")
+        # Password transitions
+        pwd_base = {w for w in base if len(w) >= 8 or w.isdigit()}
+        for w in pwd_base:
+            for i in range(len(w) - self.pmdp.order):
+                c = w[i + self.pmdp.order]
+                if not self.allow_p(c): continue
+                pref = w[i:i + self.pmdp.order]
+                state_sub = ''.join('#' if ch in self.psyms else ch for ch in pref)
+                state = f"password_{state_sub}"
+                self.pmdp.trans[state][c].add(c)
+                if i == 0 and all(self.allow_p(ch) for ch in pref):
+                    self.pmdp.init_states.append(state)
+        allowed_p = self.chars_p()
+        if not self.pmdp.init_states:
+            prefix = (allowed_p[0]*self.pmdp.order) if allowed_p else '0'*self.pmdp.order
+            self.pmdp.init_states.append(f"password_{prefix}")
 
-        for word in password_data:
-            for i in range(len(word) - self.password_mdp.order):
-                candidate = word[i+self.password_mdp.order]
-                if self.allowed_password_char(candidate):
-                    state = f"password_{word[i:i+self.password_mdp.order]}"
-                    action = candidate
-                    self.password_mdp.state_transitions[state][action].add(candidate)
-                    if i == 0:
-                        state_substring = word[i:i+self.password_mdp.order]
-                        allowed_chars = self.get_allowed_password_chars()
-                        if all(ch in allowed_chars for ch in state_substring):
-                            self.password_mdp.initial_states.append(state)
-
-    # Generate a username and password pair
     def generate_credential(self) -> Tuple[str, str]:
-        # Generate username
-        if not self.username_mdp.initial_states and self.wordlists != "":
-            state = f"username_{random.choice(self.wordlists)[:2]}"
-        else:
-            state = random.choice(self.username_mdp.initial_states)
+        # --- PASSWORD GENERATION ---
+        # pick a valid seed
+        state = random.choice(self.pmdp.init_states)
+        pwd = state.split('_', 1)[1]
 
-        username = state[9:]
-        allowed_chars = self.get_allowed_username_chars()
-        while len(username) < self.min_username_length:
-            action, next_char = self.username_mdp.choose_action(state)
-            if not action or not next_char:
-                # Fallback: append a random allowed character if none is provided by the MDP
-                next_char = random.choice(list(allowed_chars))
-            username += next_char
-            next_state = f"username_{username[-self.username_mdp.order:]}"
-            reward = self.username_mdp.get_reward(state, action if action else next_char, next_char)
-            self.username_mdp.update_q_value(state, action if action else next_char, next_char, next_state, reward)
+        # grow to min_pl, always using only allowed chars
+        while len(pwd) < self.min_pl:
+            act, nxt = self.pmdp.choose_action(state)
+            if not act:
+                # fallback: choose from exactly the allowed pool for passwords
+                pool = self.chars_p()
+                nxt  = random.choice(list(pool)) if pool else 'a'
+            next_state = f"password_{pwd[-self.pmdp.order:]}"
+            r = self.pmdp.get_reward(state, act, nxt)
+            self.pmdp.update_q(state, act, nxt, next_state, r)
+            pwd += nxt
             state = next_state
 
+        # strip disallowed digits/symbols if flags are off
+        if not self.p_n:
+            pwd = ''.join(ch for ch in pwd if not ch.isdigit())
+        if not self.p_s:
+            pwd = ''.join(ch for ch in pwd if ch not in self.psyms)
 
-        # Generate password
-        if not self.password_mdp.initial_states and self.wordlists != None:
-            state = f"password_{random.choice(self.wordlists)[:3]}"
-        else:
-            state = random.choice(self.password_mdp.initial_states)
+        # refill to min_pl if stripping dropped length
+        pool = self.chars_p()
+        while len(pwd) < self.min_pl:
+            pwd += random.choice(list(pool)) if pool else 'a'
 
-        password = state[9:]
-        allowed_chars = self.get_allowed_password_chars()
+        # --- USERNAME GENERATION ---
+        state = random.choice(self.umdp.init_states)
+        user = state.split('_', 1)[1]
 
-        while len(password) < self.min_password_length:
-            action, next_char = self.password_mdp.choose_action(state)
-            if not action or not next_char:
-                next_char = random.choice(list(allowed_chars))
-            password += next_char
-            next_state = f"password_{password[-self.password_mdp.order:]}"
-            reward = self.password_mdp.get_reward(state, action, next_char)
-            self.password_mdp.update_q_value(state, action, next_char, next_state, reward)
+        while len(user) < self.min_ul:
+            act, nxt = self.umdp.choose_action(state)
+            if not act:
+                pool = self.chars_u()
+                nxt  = random.choice(list(pool)) if pool else 'a'
+            next_state = f"username_{user[-self.umdp.order:]}"
+            r = self.umdp.get_reward(state, act, nxt)
+            self.umdp.update_q(state, act, nxt, next_state, r)
+            user += nxt
             state = next_state
 
-        password = self.enhance_password(password)
-        return username, password
+        # strip disallowed digits/symbols if flags are off
+        if not self.u_n:
+            user = ''.join(ch for ch in user if not ch.isdigit())
+        if not self.u_s:
+            user = ''.join(ch for ch in user if ch not in self.usyms)
 
-    # Enhance the generated password
-    def enhance_password(self, password: str) -> str:
-        enhanced = password.capitalize()
-        if self.pass_include_sym:
-            enhanced = f"{enhanced}{random.choice('!@#$%^&*')}{random.randint(0, 9)}"
-            
-        if self.pass_include_num:
-            enhanced = f"{enhanced}{random.randint(0, 9)}"
+        # refill to min_ul if stripping dropped length
+        pool = self.chars_u()
+        while len(user) < self.min_ul:
+            user += random.choice(list(pool)) if pool else 'a'
 
-        return enhanced
-    # Generate multiple credentials
+        return user, pwd
+
     def generate_credentials(self, count: int = 10) -> List[Tuple[str, str]]:
         self.build_state_transitions()
-        credentials = []
+        creds: List[Tuple[str, str]] = []
         for _ in range(count):
-            if self.stop_flag:
-                return
-            username, password = self.generate_credential()
-            credentials.append((username, password))
-        return credentials
-
-# Main function to run the credential generation process
-def main():
-    # File paths
-    site_list_csv_path = "site_list.csv"
-    csv_path = "web_text.csv"
-    wordlist_path = "wordlist.txt"
-
-    # Load URLs from the CSV file
-    urls = load_urls_from_csv(site_list_csv_path)
-
-    scraper = WebScraper(urls)
-    scraper.generate_csv(csv_path)
-
-    #Use NLP routine to clean CSV file
-    nlp_subroutine(csv_path)
-    
-    try:
-        generator = CredentialGeneratorMDP(csv_path, wordlist_path)
-        credentials = generator.generate_credentials(15)
-        print("\nGenerated Credentials:")
-        for username, password in credentials:
-            print(f"Username: {username}, Password: {password}")
-    except Exception as e:
-        print(f"Error generating credentials: {e}")
-
-if __name__ == "__main__":
-    main()
+            creds.append(self.generate_credential())
+        return creds
