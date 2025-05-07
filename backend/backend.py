@@ -645,7 +645,7 @@ def get_history():
 ## TEAM 10 PART
 ##
 
-pm = ProjectManager(uri="neo4j://localhost:7687", user="neo4j", password="Team_Blue")
+pm = ProjectManager(uri="bolt://localhost:7687", user="neo4j", password="Team_Blue")
 
 def serialize_datetime(obj):
     if isinstance(obj, neo4j.time.DateTime):
@@ -755,11 +755,8 @@ async def submit_results(result_type, project_name , request: Request):
         return {"status": "failure", "error": "Missing result_type or project_name"}
     try:
         # Convert Pydantic models to dictionary for processing
-        print("blah blah blah blah")
-        print("in endpoint, printing result_type", result_type , type(result_type))
-        print("project", project_name)
         test_data = await request.json()
-        pm.submit_results(test_data, result_type, project_name)
+        print(pm.submit_results(test_data, result_type, project_name))
     except Exception as e:
         return {"status": "failure", "error": f"Submission failed: {str(e)}"}
 

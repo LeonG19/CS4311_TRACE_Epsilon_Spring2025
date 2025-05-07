@@ -43,21 +43,32 @@ class SQLInjectionManager:
                 useful_data = self._extract_useful_data(visible_text)
                 is_vulnerable = bool(useful_data)
 
-                results.append({
+                result={
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
+                    "headers": "empty",  # Convert headers to string
                     "payload": payload,
                     "status_code": response.status_code,
                     "snippet": useful_data[:300] if useful_data else "No useful data",
-                    "vulnerable": is_vulnerable
-                })
-
+                    "vulnerable": is_vulnerable,
+                    "error": False
+                }
+                results.append(result)
                 print(f"[SQLInjection] Payload '{payload}' gave status {response.status_code}")
 
             except Exception as e:
                 print(f"[SQLInjection] Error on payload '{payload}': {e}")
                 results.append({
+                    "target": target_url,
+                    "port": port,
+                    "timeout": timeout,
+                    "headers": "empty",  # Convert headers to string
                     "payload": payload,
-                    "error": str(e),
-                    "vulnerable": False
+                    "status_code": 0,
+                    "snippet": "No data due to error",
+                    "vulnerable": False,
+                    "error": str(e)
                 })
 
         output = {

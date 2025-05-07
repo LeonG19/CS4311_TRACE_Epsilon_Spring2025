@@ -45,11 +45,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            target_url,
-            port:      +port,
-            timeout:   +timeout,
-            headers,
-            enum_level:+enum_level
+	    target_url,
+	    port: +port,
+	    timeout: +timeout,
+            headers:headers ||"",
+	    enum_level:+enum_level
           })
         });
   
@@ -59,6 +59,16 @@
         }
   
         result = await res.json();
+	console.log(result.results)
+	try{
+	 const rel = await fetch(`http://localhost:8000/submit_results/sqli/First Offline :0`, {
+	 method: 'POST',
+	 headers: {'Content-Type': 'application/json'},
+	 body: JSON.stringify(result.results)
+	 });
+	} catch (err: any){
+	error= 'Failed to send data: ' + err.message;
+	}
       } catch (err: any) {
         error = 'Failed to contact backend: ' + err.message;
       } finally {
