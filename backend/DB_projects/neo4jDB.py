@@ -182,7 +182,7 @@ class Neo4jInteractive:
             session.run(query, project_name=project_name)
             return {"status": "success"}
     
-    def sanitize_value(value):
+    def sanitize_value(self, value):
         if isinstance(value, bool):
             return str(value).lower()  # Converts True to "true" (unquoted in Cypher)
         elif isinstance(value, str):
@@ -216,7 +216,7 @@ class Neo4jInteractive:
                     """
                     MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
-                    SET tolowe(s.type) = LOWER($type)
+                    SET s.type = LOWER($type)
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
@@ -238,6 +238,7 @@ class Neo4jInteractive:
                     
                     
                     query = f"CREATE (r:Result {{ {fields} }})"
+                    
 
                     try:
 
