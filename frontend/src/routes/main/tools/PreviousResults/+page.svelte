@@ -49,7 +49,7 @@
 
 </script>
 <div>
-  <h1 class="center-wrapper">Previous {typeOfTool} Results</h1>
+  <h1 class="center-wrapper" style="color: white">Previous {typeOfTool} Results</h1>
   <div>
       {#if choosingScan}
       <div class="table-container">
@@ -120,6 +120,22 @@
                 </tr>
               {/each}
             {/if}
+            {#if typeOfTool == "sqli"}
+            {#each specificScanResults as scanResult, index}
+              <tr>
+                <td>{index}</td>
+                <td>{scanResult.target}</td>
+                <td>{scanResult.port}</td>
+                <td>{scanResult.timeout}</td>
+                <td>{scanResult.headers}</td>
+                <td>{scanResult.payload}</td>
+                <td>{scanResult.status_code}</td>
+                <td>{scanResult.snippet}</td>
+                <td>{scanResult.vulnerable}</td>
+                <td>{scanResult.vulnerable}</td>
+              </tr>
+            {/each}
+          {/if}
           </tbody>
         </table>
       </div>

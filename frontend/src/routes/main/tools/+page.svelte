@@ -69,11 +69,14 @@
         <div class="tm-row">
           <div><span> SQL Injector </span></div>
           <div><button on:click={gotosql} title="Navigates to the SQL Injector page">Scan</button></div>
+          <div><button on:click={() => gotoToolResults("sqli")} title="Navigates to the SQLi page">Results</button></div>
+
         </div>
         
         <div class="tm-row">
           <div><span>DB Enumerator</span></div>
           <div><button on:click={gotoDBEnum} title="Navigates to the DB Enumerator page">Scan</button></div>
+          <div><button on:click={() => gotoToolResults("DBEnumerator")} title="Navigates to the DB Enumerator page">Results</button></div>
         </div>    
         
       </div>
