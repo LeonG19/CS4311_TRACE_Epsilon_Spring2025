@@ -645,7 +645,7 @@ def get_history():
 ## TEAM 10 PART
 ##
 
-pm = ProjectManager(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+pm = ProjectManager(uri="neo4j://localhost:7687", user="neo4j", password="Team_Blue")
 
 def serialize_datetime(obj):
     if isinstance(obj, neo4j.time.DateTime):
@@ -923,7 +923,7 @@ app.add_middleware(
 ## TEAM 6 PART
 ##
 
-n4ji = Neo4jInteractive(uri="neo4j://941e739f.databases.neo4j.io", user="neo4j", password="Team_Blue")
+n4ji = Neo4jInteractive(uri="bolt://localhost:7687", user="neo4j", password="Team_Blue")
 
 #Create new Initials directly into the db.
 #THIS IS CREATING AN ANALYST WITH JUST THEIR INITIALS, A DEFAULT ROLE AND WITH NO NAME.
