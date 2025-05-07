@@ -1,101 +1,151 @@
 [
     {
         "id": 1,
-        "url": "https://www.apple.com",
+        "url": "https://www.apple.com/",
         "title": "Apple",
-        "word_count": 3804,
-        "char_count": 23610,
-        "link_count": 78,
-        "error": false,
-        "severity": "Low"
-    },
-    {
-        "id": 2,
-        "url": "https://www.apple.com/legal/internet-services/terms/site.html",
-        "title": "Legal - Website Terms of Use - Apple",
-        "word_count": 3644,
-        "char_count": 22346,
-        "link_count": 51,
-        "error": false,
-        "severity": "Low"
-    },
-    {
-        "id": 3,
-        "url": "https://www.apple.com/us/shop/goto/order/list",
-        "title": "No Title",
-        "word_count": 0,
-        "char_count": 0,
-        "link_count": 0,
-        "error": true,
-        "severity": "Medium"
-    },
-    {
-        "id": 4,
-        "url": "https://www.apple.com/entertainment/",
-        "title": "No Title",
-        "word_count": 0,
-        "char_count": 0,
-        "link_count": 0,
-        "error": true,
-        "severity": "Medium"
-    },
-    {
-        "id": 5,
-        "url": "https://www.apple.com/us/shop/goto/buy_iphone",
-        "title": "No Title",
-        "word_count": 0,
-        "char_count": 0,
-        "link_count": 0,
-        "error": true,
-        "severity": "Medium"
-    },
-    {
-        "id": 6,
-        "url": "https://www.apple.com/airtag/",
-        "title": "AirTag - Apple",
-        "word_count": 1530,
-        "char_count": 10042,
+        "word_count": 854,
+        "char_count": 5754,
         "link_count": 77,
         "error": false,
         "severity": "Low"
     },
     {
+        "id": 2,
+        "url": "https://www.apple.com/retail/",
+        "title": "Apple Store - Find a Store - Apple",
+        "word_count": 455,
+        "char_count": 3103,
+        "link_count": 75,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 3,
+        "url": "https://www.apple.com/environment/",
+        "title": "Environment - Apple",
+        "word_count": 4558,
+        "char_count": 31377,
+        "link_count": 371,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 4,
+        "url": "https://www.apple.com/contact/",
+        "title": "Contact - How to Contact Us - Apple",
+        "word_count": 912,
+        "char_count": 6479,
+        "link_count": 75,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 5,
+        "url": "https://www.apple.com/apple-card/",
+        "title": "Apple Card - Apple",
+        "word_count": 4566,
+        "char_count": 28327,
+        "link_count": 94,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 6,
+        "url": "https://www.apple.com/apple-vision-pro/",
+        "title": "Apple Vision Pro - Apple",
+        "word_count": 3766,
+        "char_count": 25931,
+        "link_count": 90,
+        "error": false,
+        "severity": "Low"
+    },
+    {
         "id": 7,
-        "url": "https://www.apple.com/us/shop/goto/help",
-        "title": "No Title",
-        "word_count": 0,
-        "char_count": 0,
-        "link_count": 0,
-        "error": true,
-        "severity": "Medium"
+        "url": "https://www.apple.com/privacy/",
+        "title": "Privacy - Apple",
+        "word_count": 2143,
+        "char_count": 14224,
+        "link_count": 74,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 8,
-        "url": "https://www.apple.com/mac/mac-does-that/",
-        "title": "Mac - Mac Does That - Switch to Mac - Apple",
-        "word_count": 4321,
-        "char_count": 28111,
-        "link_count": 110,
+        "url": "https://www.apple.com/ipad-air/",
+        "title": "iPad Air - Apple",
+        "word_count": 4298,
+        "char_count": 31484,
+        "link_count": 108,
         "error": false,
         "severity": "Low"
     },
     {
         "id": 9,
-        "url": "https://www.apple.com/us/shop/goto/buy_iphone/carrier_offers",
-        "title": "No Title",
-        "word_count": 0,
-        "char_count": 0,
-        "link_count": 0,
-        "error": true,
-        "severity": "Medium"
+        "url": "https://www.apple.com/apple-books/",
+        "title": "Apple Books - Apple",
+        "word_count": 924,
+        "char_count": 6396,
+        "link_count": 68,
+        "error": false,
+        "severity": "Low"
     },
     {
         "id": 10,
-        "url": "https://www.apple.com/iphone/",
-        "title": "iPhone - Apple",
-        "word_count": 9393,
-        "char_count": 61533,
-        "link_count": 103,
+        "url": "https://www.apple.com/watch/",
+        "title": "Apple Watch - Apple",
+        "word_count": 4669,
+        "char_count": 30774,
+        "link_count": 112,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 11,
+        "url": "https://www.apple.com/apple-tv-plus/",
+        "title": "\n\t\tApple TV+ - Apple\n\t\t\n\t",
+        "word_count": 1090,
+        "char_count": 7419,
+        "link_count": 70,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 12,
+        "url": "https://www.apple.com/leadership/",
+        "title": "Apple Leadership - Apple",
+        "word_count": 443,
+        "char_count": 5516,
+        "link_count": 85,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 13,
+        "url": "https://www.apple.com/macbook-air/",
+        "title": "MacBook Air 13-inch and MacBook Air 15-inch - Apple",
+        "word_count": 5961,
+        "char_count": 39358,
+        "link_count": 137,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 14,
+        "url": "https://www.apple.com/mac/",
+        "title": "Mac - Apple",
+        "word_count": 3899,
+        "char_count": 26344,
+        "link_count": 104,
+        "error": false,
+        "severity": "Low"
+    },
+    {
+        "id": 15,
+        "url": "https://www.apple.com/airtag/",
+        "title": "AirTag - Apple",
+        "word_count": 1530,
+        "char_count": 10042,
+        "link_count": 68,
         "error": false,
         "severity": "Low"
     }
