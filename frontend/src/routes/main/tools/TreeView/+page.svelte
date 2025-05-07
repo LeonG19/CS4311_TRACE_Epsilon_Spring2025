@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import cytoscape from 'cytoscape';
+	import { fetchTree } from '$lib/api';
 
 	let cy; //cytosscape, uses webgl by default
 	let container; //dom element reference
@@ -111,55 +112,68 @@
 		if (cy) cy.zoom(cy.zoom() * 0.8);
 	}
 
-	//where we run on component mount
-	onMount(() => {
-		const stored = sessionStorage.getItem('treeData');
-		treeData = stored ? JSON.parse(stored) : [];
+	onMount(async () => {
+		const project = sessionStorage.getItem('name');   // chosen in TreeList
+		if (!project) return;
 
-		rootLabel = sessionStorage.getItem('treeRoot') || 'ROOT';
+		try {
+			// ① call the new /tree/{project} endpoint
+			const { nodes } = await fetchTree(project);
 
-		cy = cytoscape({
-			container,
-			elements: buildElements(treeData),
-			layout: {
-				name: 'breadthfirst',
-				directed: true,
-				padding: 10,
-				spacingFactor: 1.75
-			},
-			style: [
-				{
-					selector: 'node',
-					style: {
-						'shape': 'roundrectangle',
+			// ② convert each node so existing buildElements() still works
+			treeData = nodes.map(n => ({
+				url: (n.id.startsWith('http') ? n.id : 'https://' + n.id),          // backend returns label
+				severity: n.severity,
+				status_code: n.status_code ?? 0 // keep calc‑severity fallback
+			}));
+
+			// ③ create / refresh the graph
+			if (cy) cy.destroy();              // hot‑reload friendly
+			cy = cytoscape({
+				container,
+				elements: buildElements(treeData),
+				layout: {
+					name: 'breadthfirst',
+					directed: true,
+					padding: 10,
+					spacingFactor: 1.75
+				},
+				style: [
+					{                       /* ← OPEN node‑style object */
+						selector: 'node',
+						style: {
+						shape: 'roundrectangle',
 						'background-color': ele => getSeverityColor(ele.data('severity')),
-						'label': 'data(label)',
+						label: 'data(label)',
 						'text-valign': 'center',
 						'text-halign': 'center',
-						'color': '#fff',
+						color: '#fff',
 						'font-size': 10,
 						'text-wrap': 'wrap',
 						'text-max-width': 80,
-						'width': 100,
-						'height': 50,
+						width: 100,
+						height: 50,
 						'border-width': 2,
 						'border-color': '#444'
-					}
-				},
-				{
-					selector: 'edge',
-					style: {
-						'width': 2,
+						}
+					},                      /* ← CLOSE node‑style object, comma to add edge block */
+					{
+						selector: 'edge',
+						style: {
+						width: 2,
 						'line-color': '#ccc',
 						'target-arrow-color': '#ccc',
 						'target-arrow-shape': 'triangle'
+						}
 					}
-				}
-			],
-			wheelSensitivity: 0.2
-		});
-	});
-</script>
+					],                        /* ← CLOSE style array */
+					wheelSensitivity: 0.2
+					});
+				} catch (err) {
+  console.error('Failed to fetch tree:', err);
+}
+});                      /* end onMount */
+</script>   
 
 <!-- Graph container -->
 <div class="tree-container" bind:this={container}></div>

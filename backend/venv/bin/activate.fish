@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /Users/priscilamadrid/Desktop/webTree/CS4311_TRACE_Epsilon_Spring2025/backend/venv
+set -gx VIRTUAL_ENV /Users/priscilamadrid/Desktop/db_brranch/CS4311_TRACE_Epsilon_Spring2025/backend/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

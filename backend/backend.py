@@ -30,6 +30,8 @@ import uuid
 from io import BytesIO, StringIO
 csv.field_size_limit(2**31-1)# logs whenever an endpoint is hit using logger.info
 CRAWL_RESULTS_PATH = 'outputs_crawler/crawl_results.json'
+from urllib.parse import urlparse
+from typing import Tuple, List, Dict
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("asyncio")
@@ -295,6 +297,84 @@ def severity_color(severity):
         "High": "#e74c3c"     # Red
     }.get(severity, "#95a5a6")  # Default Grey
 
+
+# --- TREE HELPERS ------------------------------------------------- #
+
+def status_to_sev(code: int) -> str:
+    """Fallback severity from HTTP status code (same logic as crawler)."""
+    if code < 100 or code >= 600:
+        return "Unknown"
+    if code < 200:
+        return "Info"
+    if code < 300:
+        return "Low"
+    if code < 400:
+        return "Medium"
+    return "High"
+
+def build_tree_from_results(results: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
+    """
+    Turn flat result list into Cytoscape‑style nodes / edges.
+    Node id == full URL path string (host or host/path/…).
+    """
+    node_sev: Dict[str, str] = {}        # url‑string -> highest severity
+    edges_set: set[Tuple[str, str]] = set()
+
+    for r in results:
+        url = r.get("url") or r.get("URL")
+        if not url:
+            continue
+
+        sev = (r.get("severity") or
+               status_to_sev(int(r.get("status_code", 0))))
+        p = urlparse(url)
+        if not p.hostname:
+            continue
+
+        host = p.hostname
+        node_sev[host] = max(node_sev.get(host, "Info"), sev,
+                             key=("Unknown Info Low Medium High".split()).index)
+
+        parent = host
+        current = host
+        for segment in [s for s in p.path.split('/') if s]:
+            current = f"{current}/{segment}"
+            # only keep the highest severity encountered for each node
+            node_sev[current] = max(node_sev.get(current, "Info"), sev,
+                                    key=("Unknown Info Low Medium High".split()).index)
+            edges_set.add((parent, current))
+            parent = current
+
+    nodes = [{"id": n, "label": n if '/' not in n else n.split('/')[-1] or '/',
+              "severity": node_sev[n]} for n in node_sev]
+
+    edges = [{"from": a, "to": b} for (a, b) in edges_set]
+    return nodes, edges
+# ------------------------------------------------------------------ #
+
+# ==== NEW MERGED TREE ENDPOINT ====
+@app.get("/tree/{project_name}")
+async def merged_tree(project_name: str):
+    """
+    Return combined crawler + fuzzer (+ bruteforcer) results
+    as {nodes, edges}.
+    """
+    try:
+        # Use ProjectManager if it has the helper; otherwise fallback to Neo4jInteractive
+        if hasattr(pm, "get_all_results_by_project"):
+            raw_results = pm.get_all_results_by_project(project_name)
+        else:
+            raw_results = n4ji.get_all_results_by_project(project_name)
+
+    except Exception as e:
+        logger.error(f"Tree query failed for {project_name}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database query failed")
+
+    if not raw_results:
+        return {"nodes": [], "edges": []}
+
+    nodes, edges = build_tree_from_results(raw_results)
+    return {"nodes": nodes, "edges": edges}
 
 # Helper to find parent node (basic example)
 def find_parent(data, current_item):

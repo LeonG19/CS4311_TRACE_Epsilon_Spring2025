@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV=/Users/priscilamadrid/Desktop/webTree/CS4311_TRACE_Epsilon_Spring2025/backend/venv
+VIRTUAL_ENV=/Users/priscilamadrid/Desktop/db_brranch/CS4311_TRACE_Epsilon_Spring2025/backend/venv
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

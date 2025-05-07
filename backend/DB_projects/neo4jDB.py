@@ -217,7 +217,7 @@ class Neo4jInteractive:
                     """
                     MATCH (p:Project {name: $project_name})
                     MERGE (s:ScanRun {run_id: $run_id})
-                    SET tolowe(s.type) = LOWER($type)
+                    SET s.type = toLower($type)
                     MERGE (p)-[:HAS_SCAN]->(s)
                     """,
                     {"run_id": run_id, "type": result_type, "project_name": project_name}
