@@ -95,11 +95,11 @@
 
 <!-- Header with Title -->
 <div class="d-flex justify-content-between align-items-center mt-4">
-<h1>Deleted Projects</h1>
+<h1 style="color: white">Deleted Projects</h1>
 </div>
 
 <!-- Deleted Projects Table -->
-<h2 class="mt-4">Deleted Projects</h2>
+<h2 class="mt-4" style="color: white">Deleted Projects</h2>
 <div class="tab-content mt-3">
 {#if deletedProjects.length > 0}
   <table class="table table-striped">
@@ -114,12 +114,12 @@
     <tbody>
       {#each deletedProjects as project}
         <tr data-project-name={project.name}>
-          <td>{project.name}</td>
-          <td>
+          <td style="color: white">{project.name}</td>
+          <td style="color: white">
             {project.deleted_date?.slice(0, 10) + " T:" + project.deleted_date?.slice(11, 19) ||
               'N/A'}
           </td>
-          <td>{project.analyst_initials || 'N/A'}</td>
+          <td style="color: white">{project.analyst_initials || 'N/A'}</td>
           <td class="d-flex gap-2 align-items-center">
             <button
               class="btn btn-sm btn-primary"
@@ -142,18 +142,3 @@
   <p>No deleted projects available.</p>
 {/if}
 </div>
-
-<!-- Button to send test data -->
-<div class="d-flex justify-content-between align-items-center mt-4">
-<h1>Test Data Sending</h1>
-<input type="file" id="fileInput" accept=".txt" />
-<button class="btn btn-danger" on:click={sendTestData}>
-  Send Test Data
-</button>
-</div>
-
-<style>
-.badge {
-  font-size: 0.9rem;
-}
-</style>
