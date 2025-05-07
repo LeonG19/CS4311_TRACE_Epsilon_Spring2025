@@ -1,4 +1,5 @@
 <script lang="ts">
+import {onMount} from 'svelte';
     // ──────────────────────────── state ────────────────────────────
     let target_url = '';
     let port       = 80;
@@ -9,8 +10,13 @@
     let result: any = null;
     let error:  string | null = null;
     let loading = false;
+    let projectName="";
   
     // ─────────────────────── helpers & validation ──────────────────
+
+    onMount(()=> {
+	projectName=sessionStorage.getItem('name');	
+});
     function validateInputs() {
       if (!target_url.trim()) {
         error = 'Target URL is required.';
@@ -61,7 +67,7 @@
         result = await res.json();
 	console.log(result.results)
 	try{
-	 const rel = await fetch(`http://localhost:8000/submit_results/sqli/First Offline :0`, {
+	 const rel = await fetch(`http://localhost:8000/submit_results/sqli/${projectName}`, {
 	 method: 'POST',
 	 headers: {'Content-Type': 'application/json'},
 	 body: JSON.stringify(result.results)

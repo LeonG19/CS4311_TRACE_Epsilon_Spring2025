@@ -32,9 +32,11 @@ class SQLInjectionManager:
         ]
 
         results = []
+        id_num= 1
         for payload in payloads:
             encoded_payload = quote(payload)  # <-- this is the key fix
             full_url = f"{target_url}/?id={encoded_payload}&Submit=Submit"
+           
 
             try:
                 response = session.get(full_url, headers=headers, timeout=timeout)
@@ -44,6 +46,7 @@ class SQLInjectionManager:
                 is_vulnerable = bool(useful_data)
 
                 result={
+                    "id": id_num,
                     "target": target_url,
                     "port": port,
                     "timeout": timeout,
@@ -56,10 +59,12 @@ class SQLInjectionManager:
                 }
                 results.append(result)
                 print(f"[SQLInjection] Payload '{payload}' gave status {response.status_code}")
+                
 
             except Exception as e:
                 print(f"[SQLInjection] Error on payload '{payload}': {e}")
                 results.append({
+                    "id": id_num,
                     "target": target_url,
                     "port": port,
                     "timeout": timeout,
@@ -70,6 +75,7 @@ class SQLInjectionManager:
                     "vulnerable": False,
                     "error": str(e)
                 })
+            id_num+=1
 
         output = {
             "target": target_url,
