@@ -265,7 +265,7 @@
     formData.append('file', file);
     
     try {
-      const response = await fetch('http://localhost:8000/upload-wordlist', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/upload-wordlist', {
         method: 'POST',
         body: formData
       });
@@ -341,7 +341,7 @@
   // API call functions with unified error handling
   async function apiCall(endpoint, onSuccess, messagePrefix) {
     try {
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+      const response = await fetch(`http://${import.meta.env.VITE_API_URL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -422,7 +422,7 @@
     activeController = new AbortController();
     
     try {
-      const response = await fetch('http://localhost:8000/fuzzer', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/fuzzer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fuzzerParams),

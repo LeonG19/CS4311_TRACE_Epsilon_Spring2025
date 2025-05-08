@@ -94,7 +94,7 @@
 
     try {
       progress = 50;
-      const response = await fetch('http://localhost:8000/api/db_enumerator', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/api/db_enumerator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -21,7 +21,7 @@
 		response.set(null);
 
 		try {
-			const res = await fetch('http://localhost:8000/proxy-request', {
+			const res = await fetch('http://${import.meta.env.VITE_API_URL}/proxy-request', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

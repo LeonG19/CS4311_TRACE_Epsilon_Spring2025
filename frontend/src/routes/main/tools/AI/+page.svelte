@@ -161,7 +161,7 @@ onDestroy(() => {
   async function handleDelete(file){
     console.log(file)
     try {
-      const response = await fetch(("http://localhost:8000/delete_AI/"+file), {
+      const response = await fetch(("http://${import.meta.env.VITE_API_URL}/delete_AI/"+file), {
         method: "GET"
       });
 
@@ -176,7 +176,7 @@ onDestroy(() => {
 
   async function stopAI() {
   try {
-    const response = await fetch("http://localhost:8000/stop_AI", {
+    const response = await fetch("http://${import.meta.env.VITE_API_URL}/stop_AI", {
       method: "POST"
     });
 
@@ -219,7 +219,7 @@ onDestroy(() => {
 
   async function fetchUserList() {
     try {
-      const response = await fetch(("http://localhost:8000/ai_results/" + projectName), {
+      const response = await fetch(("http://${import.meta.env.VITE_API_URL}/ai_results/" + projectName), {
         method: "GET",
       });
       const data = await response.json();
@@ -246,7 +246,7 @@ onDestroy(() => {
     formData.append("data", JSON.stringify(aiParams));
 
     try{
-      const response = await fetch('http://localhost:8000/generate-credentials', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/generate-credentials', {
         method: 'POST',
         body: formData
       });
@@ -290,7 +290,7 @@ onDestroy(() => {
     formData.append("file",file);
 
     try{
-      const response = await fetch(("http://localhost:8000/submit_txt_results/AI/"+projectName), {
+      const response = await fetch(("http://${import.meta.env.VITE_API_URL}/submit_txt_results/AI/"+projectName), {
       method: "POST",
       body: formData
       });

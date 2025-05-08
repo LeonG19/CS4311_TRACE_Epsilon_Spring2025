@@ -25,7 +25,7 @@
 		if (projectName) {
 			try {
 				//fetch scan results for the current project
-				const response = await fetch(`http://localhost:8000/getResult/${projectName}`); //call the database method to get all the project results
+				const response = await fetch(`http://${import.meta.env.VITE_API_URL}/getResult/${projectName}`); //call the database method to get all the project results
 				const data = await response.json();
 				groupedRoots = groupByRoot(data); //group results by domain
 			} catch (err) {

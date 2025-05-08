@@ -43,7 +43,7 @@
       }
   
       try {
-        const res = await fetch('http://localhost:8000/api/sql_injection', {
+        const res = await fetch('http://${import.meta.env.VITE_API_URL}/api/sql_injection', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -166,7 +166,7 @@
   // API call functions with unified error handling
   async function apiCall(endpoint, onSuccess, messagePrefix) {
     try {
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+      const response = await fetch(`http://${import.meta.env.VITE_API_URL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -204,7 +204,7 @@
     formData.append('file', file);
     
     try {
-      const response = await fetch('http://localhost:8000/upload-wordlist', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/upload-wordlist', {
         method: 'POST',
         body: formData
       });
@@ -268,7 +268,7 @@
     activeController = new AbortController();
 
     try {
-      const response = await fetch('http://localhost:8000/bruteforcer', {
+      const response = await fetch('http://${import.meta.env.VITE_API_URL}/bruteforcer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -7,7 +7,7 @@
 
   async function handleStart() {
       try{
-          const response = await fetch(`http://localhost:8000/analyst/${initials}/`,{
+          const response = await fetch(`http://${import.meta.env.VITE_API_URL}/analyst/${initials}/`,{
               method: 'POST'
           });
           const data= await response.json();
@@ -30,7 +30,7 @@
     formData.append('analyst_initials', initials);
     
     try {
-      const response = await fetch(`http://localhost:8000/create_initials/${initials}/${type}`,{
+      const response = await fetch(`http://${import.meta.env.VITE_API_URL}/create_initials/${initials}/${type}`,{
           method: 'POST',
           body: formData
       });
