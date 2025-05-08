@@ -21,7 +21,7 @@
 		response.set(null);
 
 		try {
-			const res = await fetch('http://localhost:8000/proxy-request', {
+			const res = await fetch('http://169.254.7.176/proxy-request', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

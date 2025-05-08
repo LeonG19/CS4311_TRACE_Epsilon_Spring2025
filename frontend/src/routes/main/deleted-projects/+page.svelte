@@ -14,7 +14,7 @@
 
   async function fetchProjects() {
     try {
-      const response = await fetch(`http://localhost:8000/dashboard/${initials}`);
+      const response = await fetch(`http://169.254.7.176/dashboard/${initials}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
       }
@@ -30,7 +30,7 @@
 
   async function restoreProject(projectName) {
     try {
-      const response = await fetch(`http://localhost:8000/restore/${projectName}/`, {
+      const response = await fetch(`http://169.254.7.176/restore/${projectName}/`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -45,7 +45,7 @@
 
   async function deleteForever(projectName) {
     try {
-      const response = await fetch(`http://localhost:8000/delete/${projectName}/`, {
+      const response = await fetch(`http://169.254.7.176/delete/${projectName}/`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -71,7 +71,7 @@
       const file = fileInput.files[0];
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/submit_txt_results/AI/Hacking_Mexico', {
+      const response = await fetch('http://169.254.7.176/submit_txt_results/AI/Hacking_Mexico', {
       method: 'POST',
       body: formData // No necesitas headers, fetch los pone automáticamente con FormData
   });

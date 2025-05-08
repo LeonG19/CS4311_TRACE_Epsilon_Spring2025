@@ -23,7 +23,7 @@
   
     async function fetchProjects() {
       try {
-        const response = await fetch(`http://localhost:8000/dashboard/${initials}`);
+        const response = await fetch(`http://169.254.7.176/dashboard/${initials}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}`);
         }
@@ -74,7 +74,7 @@
 
     async function lockProject(projectName, analyst_initials) {
     try {
-      const response = await fetch(`http://localhost:8000/lock/${projectName}/${analyst_initials}`, {
+      const response = await fetch(`http://169.254.7.176/lock/${projectName}/${analyst_initials}`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -100,7 +100,7 @@
 
   async function restoreProject(projectName, analyst_initials) {
     try {
-      const response = await fetch(`http://localhost:8000/unlock/${projectName}/${analyst_initials}`, {
+      const response = await fetch(`http://169.254.7.176/unlock/${projectName}/${analyst_initials}`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -126,7 +126,7 @@
 
   async function deleteProject(projectName) {
         try{
-            const response= await fetch(`http://localhost:8000/delete/${projectName}`,{
+            const response= await fetch(`http://169.254.7.176/delete/${projectName}`,{
                 method: 'POST'
             });
             if (response.ok){
@@ -142,7 +142,7 @@
 
     async function exportProject(projectName) {
     try {
-      const response = await fetch(`http://localhost:8000/export/${projectName}`, {
+      const response = await fetch(`http://169.254.7.176/export/${projectName}`, {
         method: 'GET'
       });
       if (!response.ok) {

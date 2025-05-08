@@ -94,7 +94,7 @@
     }
     try {
       progress = 50;
-      const response = await fetch('http://localhost:8000/api/db_enumerator', {
+      const response = await fetch('http://169.254.7.176/api/db_enumerator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,7 +133,7 @@
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8000/submit_results/db_enum/${projectName}`, {
+      const response = await fetch(`http://169.254.7.176/submit_results/db_enum/${projectName}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
