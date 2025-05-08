@@ -1,6 +1,5 @@
 <script>
   import { onMount } from 'svelte';
-
   let dbInputs = [
     {
       id: "host",
@@ -39,14 +38,12 @@
       required: true
     }
   ];
-
   let dbParams = {
     host: '',
     port: 3306,
     username: '',
     password: ''
   };
-
   let dbResult = null;
   let loading = false;
   let error = null;
@@ -59,7 +56,6 @@
     username: "",
     password: ""
   };
-
   onMount(() => {
     projectName = sessionStorage.getItem("name") || "";
     console.log("Project Name:", projectName);
@@ -68,18 +64,16 @@
   function dynamicParamUpdate(id, value) {
     dbParams[id] = value;
   }
-
   async function handleSubmit(event) {
     event.preventDefault();
     dbResult = null;
     error = null;
     loading = true;
+    event.preventDefault();
     statusText = "Connecting to database...";
     progress = 25;
-
     let isValid = true;
     Object.keys(errorMessages).forEach(key => errorMessages[key] = "");
-
     if (!dbParams.host) {
       errorMessages.host = "Target URL is required!";
       isValid = false;
@@ -92,14 +86,12 @@
       errorMessages.password = "Password is required!";
       isValid = false;
     }
-
     if (!isValid) {
       loading = false;
       statusText = "Validation failed.";
       progress = 0;
       return;
     }
-
     try {
       progress = 50;
       const response = await fetch('http://localhost:8000/api/db_enumerator', {
@@ -112,7 +104,6 @@
           password: dbParams.password
         })
       });
-
       progress = 75;
       if (!response.ok) throw new Error("Failed to fetch results.");
       dbResult = await response.json();
@@ -125,7 +116,6 @@
       progress = 100;
     }
   }
-
   function downloadResults() {
     if (!dbResult) return;
     const blob = new Blob([JSON.stringify(dbResult, null, 2)], { type: 'application/json' });
@@ -137,13 +127,11 @@
     a.click();
     URL.revokeObjectURL(url);
   }
-
   async function submitToBackend() {
     if (!dbResult || !projectName) {
       alert("Missing DB results or project name.");
       return;
     }
-
     try {
       const response = await fetch(`http://localhost:8000/submit_results/db_enum/${projectName}`, {
         method: "POST",
@@ -152,7 +140,6 @@
         },
         body: JSON.stringify(dbResult)
       });
-
       const result = await response.json();
       if (response.ok) {
         alert("Results submitted to database successfully.");
@@ -169,7 +156,6 @@
 
 <div class="dbEnumContainer">
   <h1>Database Enumerator</h1>
-
   <div class="status-bar">
     <p>{statusText}</p>
     {#if loading || progress > 0}
@@ -178,7 +164,6 @@
       </div>
     {/if}
   </div>
-
   <form on:submit={handleSubmit}>
     {#each dbInputs as input}
       <label title={input.tooltip}>
@@ -195,6 +180,7 @@
         {/if}
       </label>
     {/each}
+    <button type="submit" disabled={loading}>{loading ? "Enumerating..." : "Run Enumeration"}</button>
     <button type="submit" disabled={loading}>
       {loading ? "Enumerating..." : "Run Enumeration"}
     </button>
@@ -203,7 +189,6 @@
   {#if error}
     <div class="error">Error: {error}</div>
   {/if}
-
   {#if dbResult}
     <div class="results">
       <h2>Enumeration Results</h2>
@@ -213,7 +198,6 @@
     </div>
   {/if}
 </div>
-
 <style>
   .dbEnumContainer {
     max-width: 700px;
@@ -224,7 +208,6 @@
     background: #1e1e1e;
     color: white;
   }
-
   input {
     width: 100%;
     padding: 8px;
@@ -234,7 +217,6 @@
     background: #2e2e2e;
     color: white;
   }
-
   button {
     padding: 10px 20px;
     background-color: #007bff;
@@ -244,16 +226,13 @@
     cursor: pointer;
     margin-right: 10px;
   }
-
   button:hover {
     background-color: #0056b3;
   }
-
   .status-bar {
     margin-bottom: 20px;
     font-weight: bold;
   }
-
   .progress-bar {
     width: 100%;
     background-color: #444;
@@ -262,13 +241,12 @@
     overflow: hidden;
     margin-top: 5px;
   }
-
   .progress {
+    width: 0%;
     height: 100%;
     background-color: #646cff;
     transition: width 0.5s ease-in-out;
   }
-
   .results {
     margin-top: 20px;
     padding: 15px;
@@ -276,18 +254,15 @@
     background: #2c2c2c;
     border-radius: 8px;
   }
-
   .error {
     margin-top: 10px;
     color: red;
     font-size: 0.85rem;
   }
-
   label {
     display: block;
     margin-bottom: 15px;
   }
-
   span {
     font-weight: bold;
     display: flex;
