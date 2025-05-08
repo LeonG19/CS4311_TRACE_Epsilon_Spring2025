@@ -258,7 +258,7 @@
 async function submitfuzzerResultsToProject() {
     try {
       const resp = await fetch(
-        `http://localhost:8000/submit_results/fuzzer/${projectName}`,
+        `http://169.254.7.176/submit_results/fuzzer/${projectName}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -293,7 +293,7 @@ async function submitfuzzerResultsToProject() {
     formData.append('file', file);
     
     try {
-      const response = await fetch('http://localhost:8000/upload-wordlist', {
+      const response = await fetch('http://169.254.7.176/upload-wordlist', {
         method: 'POST',
         body: formData
       });
@@ -369,7 +369,7 @@ async function submitfuzzerResultsToProject() {
   // API call functions with unified error handling
   async function apiCall(endpoint, onSuccess, messagePrefix) {
     try {
-      const response = await fetch(`http://localhost:8000/${endpoint}`, {
+      const response = await fetch(`http://169.254.7.176/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -450,7 +450,7 @@ async function submitfuzzerResultsToProject() {
     activeController = new AbortController();
     
     try {
-      const response = await fetch('http://localhost:8000/fuzzer', {
+      const response = await fetch('http://169.254.7.176/fuzzer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fuzzerParams),
