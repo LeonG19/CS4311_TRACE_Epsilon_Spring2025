@@ -16,7 +16,7 @@
 
   async function fetchFolders() {
     try {
-      const response = await fetch('http://169.254.7.176:5173/create_folder/');
+      const response = await fetch('http://169.254.7.176:8000/create_folder/');
       if (!response.ok) {
         throw new Error(`Failed to fetch folders: ${response.status} ${response.statusText}`);
       }

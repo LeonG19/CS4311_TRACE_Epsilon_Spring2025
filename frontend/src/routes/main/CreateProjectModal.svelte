@@ -32,7 +32,7 @@
       }
   
       try {
-        const response = await fetch(`http://169.254.7.176:5173/create/`, {
+        const response = await fetch(`http://169.254.7.176:8000/create/`, {
           method: 'POST',
           body: formData
         });

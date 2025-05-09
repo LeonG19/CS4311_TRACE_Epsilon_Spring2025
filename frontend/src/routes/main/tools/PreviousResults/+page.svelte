@@ -18,7 +18,7 @@
   }
 
   async function handleRowClick(run_id){
-    const response = await fetch(`http://169.254.7.176:5173/getScanResults/${run_id}`, {
+    const response = await fetch(`http://169.254.7.176:8000/getScanResults/${run_id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -33,7 +33,7 @@
     typeOfTool = sessionStorage.getItem("prev_results_type");
     console.log(typeOfTool)
     try{
-      const response = await fetch(`http://169.254.7.176:5173/getScan/${sessionStorage.getItem('name')}/${typeOfTool}`, {
+      const response = await fetch(`http://169.254.7.176:8000/getScan/${sessionStorage.getItem('name')}/${typeOfTool}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
