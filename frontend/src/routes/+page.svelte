@@ -7,7 +7,7 @@
 
   async function handleStart() {
       try{
-          const response = await fetch(`http://169.254.7.176/analyst/${initials}/`,{
+          const response = await fetch(`http://169.254.7.176:5173/analyst/${initials}/`,{
               method: 'POST'
           });
           const data= await response.json();
@@ -27,7 +27,7 @@
 
   async function handleInitCreation(type) {
     try {
-      const verification = await fetch(`http://169.254.7.176/analyst/${initials}/`,{
+      const verification = await fetch(`http://169.254.7.176:5173/analyst/${initials}/`,{
          method: 'POST'
       });
 
@@ -39,7 +39,7 @@
           throw new Error('Initials are already in use, Plese enter a new set of initials');
       }  
 
-      const response = await fetch(`http://169.254.7.176/create_initials/${initials}/${type}/${name}`,{
+      const response = await fetch(`http://169.254.7.176:5173/create_initials/${initials}/${type}/${name}`,{
           method: 'POST',
       });
 
