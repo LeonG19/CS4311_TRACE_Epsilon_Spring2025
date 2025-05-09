@@ -165,7 +165,7 @@
   async function exportFromDB(file){
     console.log(projectName, file);
     try {
-      const response = await fetch(("http://169.254.7.176/export_AI/" + projectName + "/" + file), {
+      const response = await fetch(("http://169.254.7.176:5173/export_AI/" + projectName + "/" + file), {
         method: "GET"
       });
 
@@ -213,7 +213,7 @@
   async function handleDelete(file){
     console.log(file)
     try {
-      const response = await fetch(("http://169.254.7.176/delete_AI/"+file), {
+      const response = await fetch(("http://169.254.7.176:5173/delete_AI/"+file), {
         method: "GET"
       });
 
@@ -228,7 +228,7 @@
 
   async function stopAI() {
   try {
-    const response = await fetch("http://169.254.7.176/stop_AI", {
+    const response = await fetch("http://169.254.7.176:5173/stop_AI", {
       method: "POST"
     });
 
@@ -271,7 +271,7 @@
 
   async function fetchUserList() {
     try {
-      const response = await fetch(("http://169.254.7.176/ai_results/" + projectName), {
+      const response = await fetch(("http://169.254.7.176:5173/ai_results/" + projectName), {
         method: "GET",
       });
       const data = await response.json();
@@ -300,7 +300,7 @@
     formData.append("data", JSON.stringify(aiParams));
 
     try{
-      const response = await fetch('http://169.254.7.176/generate-credentials', {
+      const response = await fetch('http://169.254.7.176:5173/generate-credentials', {
         method: 'POST',
         body: formData
       });
@@ -363,7 +363,7 @@
     formData.append("file",file);
 
     try{
-      const response = await fetch(("http://169.254.7.176/submit_txt_results/AI/"+projectName), {
+      const response = await fetch(("http://169.254.7.176:5173/submit_txt_results/AI/"+projectName), {
       method: "POST",
       body: formData
       });

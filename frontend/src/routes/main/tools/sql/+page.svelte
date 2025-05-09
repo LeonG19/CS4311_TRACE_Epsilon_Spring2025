@@ -47,7 +47,7 @@ import {onMount} from 'svelte';
       }
   
       try {
-        const res = await fetch('http://169.254.7.176/api/sql_injection', {
+        const res = await fetch('http://169.254.7.176:5173/api/sql_injection', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -67,7 +67,7 @@ import {onMount} from 'svelte';
         result = await res.json();
 	console.log(result.results)
 	try{
-	 const rel = await fetch(`http://169.254.7.176/submit_results/sqli/${projectName}`, {
+	 const rel = await fetch(`http://169.254.7.176:5173/submit_results/sqli/${projectName}`, {
 	 method: 'POST',
 	 headers: {'Content-Type': 'application/json'},
 	 body: JSON.stringify(result.results)

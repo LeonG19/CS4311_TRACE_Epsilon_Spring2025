@@ -124,7 +124,7 @@
     stopPolling(); // Ensure no duplicate intervals
     pollingInterval = setInterval(async () => {
       if (!jobId || jobId === 'null') return;
-      const response = await fetch(`http://169.254.7.176/crawler_status?job_id=${jobId}`);
+      const response = await fetch(`http://169.254.7.176:5173/crawler_status?job_id=${jobId}`);
       if (response.ok) {
         const status = await response.json();
         crawlResult = status.results || [];
@@ -133,7 +133,7 @@
         if (status.status === 'finished') {
           stopPolling();
           try{
-            const response = await fetch(`http://169.254.7.176/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+            const response = await fetch(`http://169.254.7.176:5173/submit_results/crawler/${sessionStorage.getItem('name')}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -169,7 +169,7 @@
       return;
     }
     try {
-      const validateURL = await fetch('http://169.254.7.176/validate_url', {
+      const validateURL = await fetch('http://169.254.7.176:5173/validate_url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +191,7 @@
     totalPages = crawlerParams.max_pages || 0;
     activeController = new AbortController();
     try {
-      const response = await fetch('http://169.254.7.176/crawler', {
+      const response = await fetch('http://169.254.7.176:5173/crawler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,14 +226,14 @@
       activeController.abort();
     }
     if (!jobId || jobId === 'null') return;
-    const response = await fetch(`http://169.254.7.176/stop_crawler?job_id=${jobId}`, {
+    const response = await fetch(`http://169.254.7.176:5173/stop_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
     });
     try{
-      const response = await fetch(`http://169.254.7.176/submit_results/crawler/${sessionStorage.getItem('name')}`, {
+      const response = await fetch(`http://169.254.7.176:5173/submit_results/crawler/${sessionStorage.getItem('name')}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -248,7 +248,7 @@
     }
     if (response.ok) {
       if (jobId && jobId !== 'null') {
-        let statusResp = await fetch(`http://169.254.7.176/crawler_status?job_id=${jobId}`);
+        let statusResp = await fetch(`http://169.254.7.176:5173/crawler_status?job_id=${jobId}`);
         if (statusResp.ok) {
           const status = await statusResp.json();
           crawlResult = status.results || [];
@@ -272,7 +272,7 @@
     stopTimer();
     stopPolling();
     if (!jobId || jobId === 'null') return;
-    const response = await fetch(`http://169.254.7.176/pause_crawler?job_id=${jobId}`, {
+    const response = await fetch(`http://169.254.7.176:5173/pause_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@
     resumeToPauseButton();
     startTimer();
     if (!jobId || jobId === 'null') return;
-    const response = await fetch(`http://169.254.7.176/resume_crawler?job_id=${jobId}`, {
+    const response = await fetch(`http://169.254.7.176:5173/resume_crawler?job_id=${jobId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -416,7 +416,7 @@ onMount(async () => {
     jobId = sessionStorage.getItem('crawler_job_id');
   }
   if (jobId && jobId !== 'null') {
-    const response = await fetch(`http://169.254.7.176/crawler_status?job_id=${jobId}`);
+    const response = await fetch(`http://169.254.7.176:5173/crawler_status?job_id=${jobId}`);
     if (response.ok) {
       const status = await response.json();
       //running page if running

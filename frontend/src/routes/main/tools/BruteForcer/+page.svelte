@@ -170,7 +170,7 @@
   // API call functions with unified error handling
   async function apiCall(endpoint, onSuccess, messagePrefix) {
     try {
-      const response = await fetch(`http://169.254.7.176/${endpoint}`, {
+      const response = await fetch(`http://169.254.7.176:5173/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -208,7 +208,7 @@
     formData.append('file', file);
     
     try {
-      const response = await fetch('http://169.254.7.176/upload-wordlist', {
+      const response = await fetch('http://169.254.7.176:5173/upload-wordlist', {
         method: 'POST',
         body: formData
       });
@@ -272,7 +272,7 @@
     activeController = new AbortController();
 
     try {
-      const response = await fetch('http://169.254.7.176/bruteforcer', {
+      const response = await fetch('http://169.254.7.176:5173/bruteforcer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -532,7 +532,7 @@
 async function submitbruteResultsToProject() {
     try {
       const resp = await fetch(
-        `http://169.254.7.176/submit_results/bruteforcer/${projectName}`,
+        `http://169.254.7.176:5173/submit_results/bruteforcer/${projectName}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
